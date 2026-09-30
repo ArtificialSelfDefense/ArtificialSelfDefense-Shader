@@ -58,9 +58,9 @@ void main() {
     vec3 viewPos = getViewPosition(texcoord);//函式，自己看
     vec3 viewNormal = getViewNormal(texcoord);//同上
     
-    //color.rgb = viewNormal* 0.5 + 0.5;//把法線向量-1~1 轉成顏色0~1)
-    float dist = length(viewPos);//字面意思，取長度，單位為"遊戲內一格方塊"
-    color.rgb = vec3(dist / 40.0);
+    color.rgb = viewNormal* 0.5 + 0.5;//把法線向量-1~1 轉成顏色0~1)
+    //float dist = length(viewPos);//字面意思，取長度，單位為"遊戲內一格方塊"
+    //color.rgb = vec3(dist / 40.0);
     
     
 
