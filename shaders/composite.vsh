@@ -19,7 +19,7 @@ in vec2 vaUV0;
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
 //uniform為iris傳進來的全域唯讀變數，本身就包含in的意思、mat4為4*4矩陣
-//mvp變換拆2個，自己看
+//mvp變換拆成projectino + model&view，自己看
 
 out vec2 texcoord;
 //out代表要給rasterization(gpu)並最終傳給fsh的
