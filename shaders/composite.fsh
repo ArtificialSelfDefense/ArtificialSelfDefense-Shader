@@ -42,10 +42,10 @@ vec3 getViewPosition(vec2 uv) {
     return clipPos.xyz / clipPos.w;//透視除法(除以 w 抵銷透視縮放)
 }
 
-vec3 getViewNormal(vec2 uv) {
-    vec3 normal = texture(colortex2, uv).xyz;
-    if (length(normal) < 0.01) return vec3(0.0, 0.0, 1.0); // 【新增】防止無法線區域長度為 0 導致 normalize 除以 0 產生 NaN 畫面灰掉
-    return normalize(normal * 2.0 - 1.0);
+vec3 getViewNormal(vec2 uv) {//?
+    vec3 normal = texture(colortex2, uv).xyz;//?
+    if (length(normal) < 0.01) return vec3(0.0, 0.0, 1.0); //?
+    return normalize(normal * 2.0 - 1.0);//?
 }
 
 
@@ -59,10 +59,10 @@ void main() {
     vec3 viewPos = getViewPosition(texcoord);//函式，自己看
     vec3 viewNormal = getViewNormal(texcoord);//同上
     
-    float depth = texture(depthtex0, texcoord)[0]; // 【新增】讀取深度，判斷是否為天空背景 (天空深度 = 1.0)
-    if (depth < 1.0) {                             // 【新增】只對地形方塊 (深度 < 1.0) 賦予法線顏色
-        color.rgb = viewNormal * 0.5 + 0.5;        // 【未變更】原本的法線顏色賦值
-    }                                              // 【新增】結束判斷，讓天空保持原本的 gcolor
+    float depth = texture(depthtex0, texcoord)[0]; //?
+    if (depth < 1.0) {                             //?
+        color.rgb = viewNormal * 0.5 + 0.5;        //?
+    }                                              //?
     
 
     fragColor = color;
