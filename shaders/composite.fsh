@@ -11,16 +11,18 @@
 
 
 in vec2 texcoord;
+in vec3 normal;
 //rasterization已經完成，每個像素都會有一個
 
 
 uniform sampler2D gcolor;
 uniform sampler2D depthtex0;
-uniform mat4 gbufferProjectionInverse;
+uniform sampler2D gbufferNormal;
+uniform mat4 gbufferProjectionInverse;//projection transformation的反矩陣
 //uniform同.vsh
-//1.sampler2D告訴 GPU 這是一張 2D 貼圖，叫硬體採樣器準備隨時去這張貼圖裡拿顏色
-//2.同上，不過這是2D深度貼圖
-//3.projection transformation的反矩陣
+//sampler2D告訴 GPU 這是一張 2D 貼圖，叫硬體採樣器準備隨時去這張貼圖裡拿顏色
+//目前有三個2D貼圖，gcolor,depthhtex0,gbufferNormal
+
 
 
 out vec4 fragColor;
@@ -40,12 +42,23 @@ vec3 getViewPosition(vec2 uv) {
     return clipPos.xyz / clipPos.w;//透視除法(除以 w 抵銷透視縮放)
 }
 
+vec3 getViewNormal(vec2 uv) {
+    vec3 normal = texture(gbufferNormal, uv).xyz;
+   return normalize(normal * 2.0 - 1.0);
+}
+
+
+
+
 
 void main() {
     vec4 color = texture(gcolor, texcoord);
 
     
     vec3 viewPos = getViewPosition(texcoord);//函式，自己看
+    vec3 viewNormal = getViewNormal(texcoord);//同上
+    
+    //color.rgb = viewNormal* 0.5 + 0.5;//把法線向量-1~1 轉成顏色0~1)
     float dist = length(viewPos);//字面意思，取長度，單位為"遊戲內一格方塊"
     color.rgb = vec3(dist / 40.0);
     
