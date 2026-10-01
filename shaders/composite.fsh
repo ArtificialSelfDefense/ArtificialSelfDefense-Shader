@@ -7,26 +7,27 @@
 
 
 
-#version 330 core
+#version 330 compatibility
 
 
 in vec2 texcoord;
 in vec3 normal;
+//in是從iris從mc傳進來的意思
 //rasterization已經完成，每個像素都會有一個
 
 
-uniform sampler2D gcolor;
+uniform sampler2D colortex0;
 uniform sampler2D depthtex0;
 uniform sampler2D colortex2;
 uniform mat4 gbufferProjectionInverse;//projection transformation的反矩陣
-//uniform同.vsh
+//uniform為iris傳進來的全域唯讀變數，本身就包含in的意思、mat4為4*4矩陣
 //sampler2D告訴 GPU 這是一張 2D 貼圖，叫硬體採樣器準備隨時去這張貼圖裡拿顏色
-//目前有三個2D貼圖，gcolor,depthhtex0,colortex2
+//目前有三個2D貼圖，colortex0(gcolor),depthhtex0,colortex2
 
 
 
 out vec4 fragColor;
-//最終輸出到螢幕的(rgba，最小=0，最大=1)
+//最終從fragment傳出來的(輸出到螢幕的，有rgba四個維度，最小=0，最大=1)
 
 
 
@@ -53,18 +54,32 @@ vec3 getViewNormal(vec2 uv) {//?
 
 
 void main() {
-    vec4 color = texture(gcolor, texcoord);
+    vec4 color = texture(colortex0, texcoord);
 
     
     vec3 viewPos = getViewPosition(texcoord);//函式，自己看
     vec3 viewNormal = getViewNormal(texcoord);//同上
     
-    float depth = texture(depthtex0, texcoord)[0]; //?
-    if (depth < 1.0) {                             //?
-        color.rgb = viewNormal * 0.5 + 0.5;        //?
-    }                                              //?
-    
 
+          
+          
+    /*
+    測試depth:
+    
+    float depth = texture(depthtex0, texcoord)[0];
+    float dist = length(viewPos) / 64.0;
+    color.rgb = vec3(dist);
+    
+    
+    */
+    
+    /*
+    測試normal:
+
+    */
+
+    
+    
     fragColor = color;
     //最後輸出。簡單的自己看
 }
