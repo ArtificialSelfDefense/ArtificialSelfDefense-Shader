@@ -1,3 +1,3 @@
-//只有colortex0(gcolor)有東西，其他colortex都是空的
-
-#define gdepth depthtex0
+#define DEPTH_OPAQUE depthtex0
+#define DEPTH_TRANSPARENT depthtex1
+#define DEPTH_HAND depthtex2
