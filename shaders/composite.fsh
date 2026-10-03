@@ -12,7 +12,7 @@
 #include "Define_DepthTex.glsl"
 
 
-in vec2 texcoord;
+in vec2 v_texcoord;
 
 
 uniform sampler2D COLOR_MAIN;
@@ -53,11 +53,11 @@ vec3 getViewNormal(vec2 uv) {//?
 
 
 void main() {
-    vec4 color = texture(COLOR_MAIN, texcoord);
+    vec4 color = texture(COLOR_MAIN, v_texcoord);
 
     
-    vec3 viewPos = getViewPosition(texcoord);//函式，自己看
-    vec3 viewNormal = getViewNormal(texcoord);//同上
+    vec3 viewPos = getViewPosition(v_texcoord);//函式，自己看
+    vec3 viewNormal = getViewNormal(v_texcoord);//同上
 
           
           

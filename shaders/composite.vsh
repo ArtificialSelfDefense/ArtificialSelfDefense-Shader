@@ -25,12 +25,12 @@ in vec2 vaUV0;
 
 
 
-out vec2 texcoord;
+out vec2 v_texcoord;
 //out代表要給rasterization(gpu)並最終傳給fsh的
 //texcoord=texture coordinate
 
 void main() {
-    texcoord = a_uv.xy;
+    v_texcoord = a_uv.xy;
     //a_uv(gl_MultiTexCoord0): (iris傳進來的)螢幕4維原始UV座標，vec4(u, v, s, t)
     //.xy: 矩陣是vec4，只需要2維UV，只取xy
 
