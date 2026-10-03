@@ -20,5 +20,6 @@
 // 4. Engine Uniform Matrices (Iris 內建逆矩陣等)
 #define u_inv_proj   gbufferProjectionInverse
 
-// 4. Samplers (貼圖取樣器)
+// 5. Samplers (貼圖取樣器)
 #define u_texture    gtexture
+

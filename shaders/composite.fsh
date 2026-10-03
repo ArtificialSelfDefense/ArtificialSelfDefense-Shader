@@ -10,7 +10,7 @@
 #version 330 compatibility
 #include "Define_ColorTex.glsl"
 #include "Define_DepthTex.glsl"
-#include "Define_Inputs.glsl"
+#include "Define_Engine.glsl"
 
 
 in vec2 v_texcoord;
@@ -27,7 +27,7 @@ uniform mat4 u_inv_proj;//projection transformation的反矩陣
 
 
 
-out vec4 fragColor;
+out vec4 o_color;
 
 
 
@@ -39,7 +39,7 @@ out vec4 fragColor;
 vec3 getViewPosition(vec2 uv) {
     float depth = texture(DEPTH_OPAQUE, uv).r;//texture(a,b)是glsl內建的function，a代表要去哪個貼圖抓、b代表要抓貼圖的哪個位置。.r就是只取red，但深度圖的rgb都一樣所以隨便取，約定成俗取r
     vec3 ndcPos = vec3(uv, depth)*2.0 - 1.0;//因為NDC規定畫面中心要是(0,0)，所以把uv的depth補回來之後，要整個"乘2減1"，讓uv的數學座標都正確
-    vec4 clipPos = gbufferProjectionInverse * vec4(ndcPos, 1.0);//clip在projection乘完後還是4維的，補上 w=1.0 方便進行 4x4 矩陣運算，然後乘以"反projection矩陣"得到clip space
+    vec4 clipPos = u_inv_proj * vec4(ndcPos, 1.0);//clip在projection乘完後還是4維的，補上 w=1.0 方便進行 4x4 矩陣運算，然後乘以"反projection矩陣"得到clip space
     return clipPos.xyz / clipPos.w;//透視除法(除以 w 抵銷透視縮放)
 }
 
@@ -60,12 +60,13 @@ void main() {
     vec3 viewPos = getViewPosition(v_texcoord);//函式，自己看
     vec3 viewNormal = getViewNormal(v_texcoord);//同上
 
+
           
           
     /*
     測試depth:
     
-    float depth = texture(DEPTH_OPAQUE, texcoord).r;
+    float depth = texture(DEPTH_OPAQUE, v_texcoord).r;
     float dist = length(viewPos) / 64.0;
     color.rgb = vec3(dist);
     
@@ -79,6 +80,6 @@ void main() {
 
     
     
-    fragColor = color;
+    o_color = color;
     //最後輸出。簡單的自己看
 }

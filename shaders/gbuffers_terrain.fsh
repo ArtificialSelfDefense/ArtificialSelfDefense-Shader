@@ -1,6 +1,6 @@
 #version 330 compatibility
 #include "Define_ColorTex.glsl"
-#include "Define_Inputs.glsl"
+#include "Define_Engine.glsl"
 
 
 in vec2 v_texcoord;
