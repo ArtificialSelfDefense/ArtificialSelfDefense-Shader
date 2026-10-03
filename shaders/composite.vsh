@@ -7,6 +7,7 @@
 
 
 #version 330 compatibility
+#include "Define_Inputs.glsl"
 //版本，330後的寫法我比較喜歡所以這麼用。core代表不向下相容、compatibility代表可以向下相容。根據document，我選compatibility以保證穩定
 //在 compatibility 下，composite 階段使用傳統 gl_ 屬性綁定最穩妥，Patcher 能 100% 完美轉譯
 
@@ -29,7 +30,7 @@ out vec2 texcoord;
 //texcoord=texture coordinate
 
 void main() {
-    texcoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
+    texcoord = a_uv.xy;
     //gl_MultiTexCoord0: (iris傳進來的)螢幕4維原始UV座標，vec4(u, v, s, t)
     //gl_TextureMatrix[0]: (iris傳進來的)貼圖變換矩陣，composite裡是4x4單位矩陣，[0]跟c語言的陣列一樣，代表"第一個"，所以在這就是"第一個texure matrix"
     //.xy: 矩陣是vec4，只需要2維UV，只取xy
