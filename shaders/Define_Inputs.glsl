@@ -14,5 +14,5 @@
 #define u_normalmat  gl_NormalMatrix
 
 // 3. Texture Matrices - vsh/fsh通用
-#define u_texmat     gl_TextureMatrix[0] // 方塊主貼圖矩陣
+#define u_texmat     gl_TextureMatrix[0] // 方塊主貼圖矩陣。 composite裡是4x4單位矩陣，[0]跟c語言的陣列一樣，代表"第一個"，所以在這就是"第一個texure matrix"
 #define u_lightmat   gl_TextureMatrix[1] // 光照圖 (Lightmap) 矩陣

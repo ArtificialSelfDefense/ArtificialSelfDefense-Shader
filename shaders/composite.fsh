@@ -13,13 +13,12 @@
 
 
 in vec2 texcoord;
-//in是從iris從mc傳進來的意思
-//rasterization已經完成，每個像素都會有一個
 
 
 uniform sampler2D COLOR_MAIN;
-uniform sampler2D DEPTH_OPAQUE;
 uniform sampler2D COLOR_NORMAL;
+uniform sampler2D DEPTH_OPAQUE;
+
 uniform mat4 gbufferProjectionInverse;//projection transformation的反矩陣
 //uniform為iris傳進來的全域唯讀變數，本身就包含in的意思、mat4為4*4矩陣
 //sampler2D告訴 GPU 這是一張 2D 貼圖，叫硬體採樣器準備隨時去這張貼圖裡拿顏色
@@ -28,7 +27,6 @@ uniform mat4 gbufferProjectionInverse;//projection transformation的反矩陣
 
 
 out vec4 fragColor;
-//最終從fragment傳出來的(輸出到螢幕的，有rgba四個維度，最小=0，最大=1)
 
 
 

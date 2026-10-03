@@ -31,8 +31,7 @@ out vec2 texcoord;
 
 void main() {
     texcoord = a_uv.xy;
-    //gl_MultiTexCoord0: (iris傳進來的)螢幕4維原始UV座標，vec4(u, v, s, t)
-    //gl_TextureMatrix[0]: (iris傳進來的)貼圖變換矩陣，composite裡是4x4單位矩陣，[0]跟c語言的陣列一樣，代表"第一個"，所以在這就是"第一個texure matrix"
+    //a_uv(gl_MultiTexCoord0): (iris傳進來的)螢幕4維原始UV座標，vec4(u, v, s, t)
     //.xy: 矩陣是vec4，只需要2維UV，只取xy
 
     
