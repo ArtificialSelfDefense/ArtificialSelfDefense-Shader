@@ -43,10 +43,10 @@ vec3 getViewPosition(vec2 uv) {
     return clipPos.xyz / clipPos.w;//透視除法(除以 w 抵銷透視縮放)
 }
 
-vec3 getViewNormal(vec2 uv) {//?
-    vec3 normal = texture(COLOR_NORMAL, uv).xyz;//?
-    if (length(normal) < 0.01) return vec3(0.0, 0.0, 1.0); //?
-    return normalize(normal * 2.0 - 1.0);//?
+vec3 getViewNormal(vec2 uv) {
+    vec3 normal = texture(COLOR_NORMAL, uv).xyz;// 1. 從 COLOR_NORMAL (colortex1) 採樣出我們在 gbuffers_terrain 存進去的 RGB 數值
+    if (length(normal) < 0.01) return vec3(0.0, 0.0, 1.0); // 2. 如果這像素根本沒畫任何東西 (天空/無幾何區)，深度/法線長度接近 0，直接回傳預設的「朝向相機正面 (0, 0, 1)」方向向量，避免後續光照計算爆掉 (NaN)
+    return normalize(normal * 2.0 - 1.0);//3. 解碼 (Decoding)：將 G-Buffer 的 0~1 RGBA 顏色，換回真正的 [-1.0, 1.0] View Normal 向量
 }
 
 
@@ -61,7 +61,7 @@ void main() {
     vec3 viewNormal = getViewNormal(v_texcoord);//同上
 
 
-          
+    color.rgb = viewNormal * 0.5 + 0.5;     
           
     /*
     測試depth:
@@ -76,6 +76,7 @@ void main() {
     /*
     測試normal:
 
+    color.rgb = viewNormal * 0.5 + 0.5;
     */
 
     
