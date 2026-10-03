@@ -1,5 +1,6 @@
 #version 330 compatibility
 #include "Define_ColorTex.glsl"
+#include "Define_Inputs.glsl"
 
 
 in vec2 v_texcoord;
@@ -7,7 +8,7 @@ in vec4 v_color;
 in vec3 v_view_normal;
 
 
-uniform sampler2D gtexture;
+uniform sampler2D u_texture;
 
 /*
   DRAWBUFFERS解釋:
