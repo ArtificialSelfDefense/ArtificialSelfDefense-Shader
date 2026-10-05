@@ -62,15 +62,30 @@ vec3 getViewNormal(vec2 uv) {
 
 
 void main() {
-    // 1. 定義 P 點 (當前像素在 View Space 的 3D 座標)
+    // 1. 定義 P 點與 N 法線
     vec3 P = getViewPosition(v_texcoord);
-
-    // 2. 順便拿當前點的 View Normal
     vec3 N = getViewNormal(v_texcoord);
 
+    // 2. 驗證過濾天空：如果是天空，直接刷成亮紅色
+    float depth = texture(DEPTH_OPAQUE, v_texcoord).r;
+    if (depth >= 1.0) {
+        o_color = vec4(1.0, 0.0, 0.0, 1.0); // 亮紅色純色
+        return;
+    }
 
+    // 非天空區域暫時輸出原色
+    o_color = texture(COLOR_MAIN, v_texcoord);
+    
+    
+
+    
+    /*
+    純顏色無shadow:
     vec4 color = texture(COLOR_MAIN, v_texcoord);
     o_color=color;
+    
+    */
+    
     
 
           
