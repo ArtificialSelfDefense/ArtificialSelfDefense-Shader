@@ -50,7 +50,32 @@ vec3 getViewNormal(vec2 uv) {
     return normalize(normal * 2.0 - 1.0);//3. 解碼 (Decoding)：將 G-Buffer 的 0~1 RGBA 顏色，換回真正的 [-1.0, 1.0] View Normal 向量
 }
 
+vec2 projectViewToUV(vec3 viewPos, mat4 projMatrix) {//view space轉uv
+    vec4 clipPos = projMatrix * vec4(viewPos, 1.0);
+    vec3 ndc = clipPos.xyz / clipPos.w; 
+    return ndc.xy * 0.5 + 0.5;
+}
 
+// 根據像素 UV 生成 Simple 隨機 half-sphere 方向向量 (View Space)
+vec3 getSampleDirection(vec3 N, vec2 uv) {
+    
+    float rand1 = fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453);//fract()=去整數只留小數。這麼做是因為glsl沒有random()函數，只能自己搓
+    float rand2 = fract(sin(dot(uv, vec2(39.3461, 11.1351))) * 43758.5453);//步驟為把uv跟一個很亂的vec2內積>得到混合的純量>取sin(-1~1)>乘以一個大數>只留小數點，這樣得到uv只要變一點整個rand就會劇變，達到random效果
+    
+    // 生成半球座標 (Hemisphere)
+    float phi = 6.2831853 * rand1;//一圈圓形的弧度，即2*pi，取名為phi。在此取隨機
+    float cosTheta = sqrt(1.0 - rand2);//theta即光線相對於法線正上方的仰角。這邊開根號是因為要讓越直射的光貢獻越多，詳細數學不知道也不需要知道，但結果是這樣
+    float sinTheta = sqrt(rand2);
+    
+    vec3 localDir = vec3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);//根據簡單的3D幾何，可以把最後發射的光線方向的xyz座標寫成這樣
+    
+    // 將局部半球座標對齊法線 N (TBN 矩陣對齊)
+    vec3 helper = abs(N.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);//找一個向量幫忙外積。abs是絕對值(absolute value)
+    vec3 tangent = normalize(cross(helper, N));//讓真正的normal跟剛剛的那個不平行向量外積，得到一個不相交的向量並變成單位向量，當作p點的切線
+    vec3 bitangent = cross(N, tangent);//把p點的切線再跟normal外積，得到第二個切線(bitangent)
+    
+    return normalize(tangent * localDir.x + bitangent * localDir.y + N * localDir.z);//線性組合，即新的xyz(tangent,bitangent,N)的分量組合
+}
 
 
 
@@ -73,12 +98,53 @@ void main() {
         return;
     }
 
-    // 非天空區域暫時輸出原色
-    o_color = texture(COLOR_MAIN, v_texcoord);
+    // 3. 取得發射方向 (View Space 中的半球隨機方向)
+    vec3 rayDir = getSampleDirection(N, v_texcoord);
+
+    // 4. Raymarching 步進參數設定
+    int maxSteps = 16;            // 最大步進次數
+    float stepSize = 0.1;         // 每一步採樣的距離 (View Space 單位)
+    bool hit = false;
+    vec3 hitColor = vec3(0.0);
+
+    
+    vec3 rayStart = P + N * 0.05; // 往法線方向推開 0.05 單位
+    // 開始沿光線前進
+    for (int i = 1; i <= maxSteps; i++) {
+        // 計算光線當前的 3D 位置 (先不加 Bias)
+        vec3 rayPos = P + rayDir * (float(i) * stepSize);
+
+        // 將 3D 光線位置投影回螢幕 UV 座標
+        vec2 rayUV = projectViewToUV(rayPos, u_proj);
+
+        // 如果光線跑出螢幕外，直接終止 raymarching
+        if (rayUV.x < 0.0 || rayUV.x > 1.0 || rayUV.y < 0.0 || rayUV.y > 1.0) {
+            break;
+        }
+
+        // 取出光線所指位置的「真實場景深度」
+        vec3 scenePos = getViewPosition(rayUV);
+
+        // 深度比對：在 View Space 中，Z 軸通常為負值 (或者離相機越遠 Z 越大/小)
+        // 判斷光線是否踩到了物體後面 (這裡假設 Z 是負值，越遠 Z 越小)
+        if (rayPos.z <= scenePos.z) {
+            hit = true;
+            hitColor = texture(COLOR_MAIN, rayUV).rgb; // 抓取撞擊點的顏色！
+            break;
+        }
+    }
+
+    // 驗證測試：如果撞到物體，輸出綠色；沒撞到輸出黑色
+    if (hit) {
+        o_color = vec4(0.0, 1.0, 0.0, 1.0); // 綠色代表撞擊成功
+    } else {
+        o_color = vec4(0.0, 0.0, 0.0, 1.0); // 黑色代表未撞擊
+    }
+
     
     
 
-    
+
     /*
     純顏色無shadow:
     vec4 color = texture(COLOR_MAIN, v_texcoord);
