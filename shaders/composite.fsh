@@ -21,7 +21,6 @@ uniform sampler2D COLOR_NORMAL;
 uniform sampler2D DEPTH_OPAQUE;
 
 uniform mat4 u_inv_proj;//projection transformation的反矩陣
-uniform mat4 u_proj;
 //uniform為iris傳進來的全域唯讀變數，本身就包含in的意思、mat4為4*4矩陣
 //sampler2D告訴 GPU 這是一張 2D 貼圖，叫硬體採樣器準備隨時去這張貼圖裡拿顏色
 //目前有三個2D貼圖，COLOR_MAIN(colortex0),COLOR_NORMAL(colortex1),DEPTH_OPAQUE(depthtex0)

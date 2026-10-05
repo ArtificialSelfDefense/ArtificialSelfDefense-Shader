@@ -9,9 +9,9 @@
 #define a_lightmap   gl_MultiTexCoord1
 
 // 2. Matrices - vsh/fsh通用 (u開頭代表uniform) *不得使用，gl開頭的matrix不能define*
-//#define u_modelview  gl_ModelViewMatrix
-//#define u_proj       gl_ProjectionMatrix
-//#define u_normalmat  gl_NormalMatrix
+#define u_modelview  gl_ModelViewMatrix
+#define u_proj       gl_ProjectionMatrix
+#define u_normalmat  gl_NormalMatrix
 
 // 3. Texture Matrices - vsh/fsh通用
 #define u_texmat     gl_TextureMatrix[0] // 方塊主貼圖矩陣。 composite裡是4x4單位矩陣，[0]跟c語言的陣列一樣，代表"第一個"，所以在這就是"第一個texure matrix"
