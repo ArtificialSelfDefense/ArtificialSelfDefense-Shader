@@ -87,11 +87,11 @@ vec3 viewToScreen(vec3 viewPos) {
 
 // 6. 螢幕空間光線步進 (Screen-Space Ray Marching)
 bool traceRay(vec3 origin, vec3 dir, out vec2 hitUV) {
-    float stepSize = 0.4;  // 每一步往前走多少 View Space 單位 (可調)
-    int maxSteps = 32;     // 最大步進次數 (可調)
+    float stepSize = 0.2;  // 每一步往前走多少 View Space 單位 (可調)
+    int maxSteps = 40;     // 最大步進次數 (可調)
     
     // 關鍵！起點往法線推開一點點，防止「自碰撞 (Self-Intersection)」
-    vec3 currentPos = origin + dir * 0.1;
+    vec3 currentPos = origin + dir * 0.15;
 
     for (int i = 0; i < maxSteps; i++) {
         currentPos += dir * stepSize;
@@ -109,8 +109,9 @@ bool traceRay(vec3 origin, vec3 dir, out vec2 hitUV) {
         // 去 G-Buffer 查這個 UV 點真實的場景深度
         float sceneDepth = texture(DEPTH_OPAQUE, screenPos.xy).r;
 
-        // 碰撞檢測：光線當前深度 > 場景深度，且厚度容忍值在 0.02 內
-        if (screenPos.z > sceneDepth && (screenPos.z - sceneDepth) < 0.02) {
+        // 碰撞檢測：光線當前深度 > 場景深度，且厚度容忍值在 0.08 內
+        float depthDiff = screenPos.z - sceneDepth;
+        if (depthDiff > 0.001 && depthDiff < 0.08) {
             hitUV = screenPos.xy;
             return true; // 撞到物體！
         }
@@ -123,6 +124,12 @@ bool traceRay(vec3 origin, vec3 dir, out vec2 hitUV) {
 
 
 void main() {
+    float depth = texture(DEPTH_OPAQUE, v_texcoord).r;
+    if (depth >= 0.9999) {
+        o_color = texture(COLOR_MAIN, v_texcoord);
+        return;
+    }
+
     vec4 color = texture(COLOR_MAIN, v_texcoord);
 
     
@@ -141,12 +148,13 @@ void main() {
         // 撞到物體！偷取撞擊點的 Albedo 顏色作為間接光
         indirectLight = texture(COLOR_MAIN, hitUV).rgb;
     } else {
-        // 沒撞到物體，給一點微弱的天空環境光 (Sky Ambient)
-        indirectLight = vec3(0.05, 0.07, 0.1);
+        // 沒撞到物體，給原本顏色的 0.3 倍（除錯底色，防黑屏）
+        indirectLight = texture(COLOR_MAIN, v_texcoord).rgb * 0.3;
     }
 
     // 3. 測試輸出：先只看純間接光 (Raw Indirect Light)！
     o_color = vec4(indirectLight, 1.0);
+    
 
 
 
@@ -169,6 +177,5 @@ void main() {
 
     
     
-    o_color = color;
-    //最後輸出。簡單的自己看
+
 }
