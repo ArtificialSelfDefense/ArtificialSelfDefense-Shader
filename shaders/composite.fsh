@@ -3,6 +3,7 @@
 2.composite的用途是"post-processing"
 3.因為要做screen space path tracing，所以要從算好的像素推回view space(做projection前的狀態)。
   正向順序為:m>v>p>clip>透視除法>ndc>像素，反向即得到逆順序。注意其中透視除法不是線性運算，所以會透過一些手段來反推
+4.sspt的想法:螢幕的每個像素對應一個遊戲裡的點>取該點(P點)的normal(N)>向外發射光線>撞到就把撞到地方的顏色用一些方式弄回原本的發射點
 */
 
 
@@ -61,6 +62,13 @@ vec3 getViewNormal(vec2 uv) {
 
 
 void main() {
+    // 1. 定義 P 點 (當前像素在 View Space 的 3D 座標)
+    vec3 P = getViewPosition(v_texcoord);
+
+    // 2. 順便拿當前點的 View Normal
+    vec3 N = getViewNormal(v_texcoord);
+
+
     vec4 color = texture(COLOR_MAIN, v_texcoord);
     o_color=color;
     
