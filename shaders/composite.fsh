@@ -39,7 +39,7 @@ out vec4 o_color;
 
 vec3 getViewPosition(vec2 uv) {
     float depth = texture(DEPTH_OPAQUE, uv).r;//texture(a,b)是glsl內建的function，a代表要去哪個貼圖抓、b代表要抓貼圖的哪個位置。.r就是只取red，但深度圖的rgb都一樣所以隨便取，約定成俗取r
-    vec3 ndcPos = vec3(uv, depth)*2.0 - 1.0;//因為NDC規定畫面中心要是(0,0)，所以把uv的depth補回來之後，要整個"乘2減1"，讓uv的數學座標都正確
+    vec3 ndcPos = vec3(uv, depth)*2-1;//因為NDC規定畫面中心要是(0,0)，所以把uv的depth補回來之後，要整個"乘2減1"，讓uv的數學座標都正確
     vec4 clipPos = u_inv_proj * vec4(ndcPos, 1.0);//clip在projection乘完後還是4維的，補上 w=1.0 方便進行 4x4 矩陣運算，然後乘以"反projection矩陣"得到clip space
     return clipPos.xyz / clipPos.w;//透視除法(除以 w 抵銷透視縮放)
 }
@@ -101,47 +101,8 @@ void main() {
     // 3. 取得發射方向 (View Space 中的半球隨機方向)
     vec3 rayDir = getSampleDirection(N, v_texcoord);
 
-    // 4. Raymarching 步進參數設定
-    int maxSteps = 16;            // 最大步進次數
-    float stepSize = 0.1;         // 每一步採樣的距離 (View Space 單位)
-    bool hit = false;
-    vec3 hitColor = vec3(0.0);
-
-    
-    vec3 rayStart = P + N * 0.05; // 往法線方向推開 0.05 單位
-    // 開始沿光線前進
-    for (int i = 1; i <= maxSteps; i++) {
-        // 計算光線當前的 3D 位置 (先不加 Bias)
-        vec3 rayPos = P + rayDir * (float(i) * stepSize);
-
-        // 將 3D 光線位置投影回螢幕 UV 座標
-        vec2 rayUV = projectViewToUV(rayPos, u_proj);
-
-        // 如果光線跑出螢幕外，直接終止 raymarching
-        if (rayUV.x < 0.0 || rayUV.x > 1.0 || rayUV.y < 0.0 || rayUV.y > 1.0) {
-            break;
-        }
-
-        // 取出光線所指位置的「真實場景深度」
-        vec3 scenePos = getViewPosition(rayUV);
-
-        // 深度比對：在 View Space 中，Z 軸通常為負值 (或者離相機越遠 Z 越大/小)
-        // 判斷光線是否踩到了物體後面 (這裡假設 Z 是負值，越遠 Z 越小)
-        if (rayPos.z <= scenePos.z) {
-            hit = true;
-            hitColor = texture(COLOR_MAIN, rayUV).rgb; // 抓取撞擊點的顏色！
-            break;
-        }
-    }
-
-    // 驗證測試：如果撞到物體，輸出綠色；沒撞到輸出黑色
-    if (hit) {
-        o_color = vec4(0.0, 1.0, 0.0, 1.0); // 綠色代表撞擊成功
-    } else {
-        o_color = vec4(0.0, 0.0, 0.0, 1.0); // 黑色代表未撞擊
-    }
-
-    
+    vec4 color = texture(COLOR_MAIN, v_texcoord);
+    o_color=color;
     
 
 
