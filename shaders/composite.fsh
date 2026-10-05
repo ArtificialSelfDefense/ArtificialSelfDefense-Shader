@@ -75,7 +75,7 @@ vec3 getSampleDirection(vec3 N, vec2 uv) {
     vec3 tangent = normalize(cross(helper, N));//讓真正的normal跟剛剛的那個不平行向量外積，得到一個不相交的向量並變成單位向量，當作p點的切線
     vec3 bitangent = cross(N, tangent);//把p點的切線再跟normal外積，得到第二個切線(bitangent)
     
-    return normalize(tangent * localDir.x + bitangent * localDir.y + N * localDir.z);//線性組合，即新的xyz(tangent,bitangent,N)的分量組合
+    return normalize(tangent * localDir.x + bitangent * localDir.y + N * localDir.z);//線性組合，即新的xyz(tangent,bitangent,N，即TBN)的分量組合
 }
 
 
@@ -110,9 +110,12 @@ void main() {
     float stepSize = 0.1;         // 每一步採樣的距離 (View Space 單位)
     bool hit = false;
     vec3 hitColor = vec3(0.0);
+    float bias = 0.005;
+    float thickness = 0.5;
 
     
     vec3 rayStart = P + N * 0.05; // 往法線方向推開 0.05 單位
+
     // 開始沿光線前進
     for (int i = 1; i <= maxSteps; i++) {
         // 計算光線當前的 3D 位置 (先不加 Bias)
@@ -131,9 +134,10 @@ void main() {
 
         // 深度比對：在 View Space 中，Z 軸通常為負值 (或者離相機越遠 Z 越大/小)
         // 判斷光線是否踩到了物體後面 (這裡假設 Z 是負值，越遠 Z 越小)
-        if (rayPos.z <= scenePos.z) {
+        float depthDiff = scenePos.z - rayPos.z;
+        if (depthDiff >= bias && depthDiff < thickness) {
             hit = true;
-            hitColor = texture(COLOR_MAIN, rayUV).rgb; // 抓取撞擊點的顏色！
+            hitColor = texture(COLOR_MAIN, rayUV).rgb;
             break;
         }
     }
