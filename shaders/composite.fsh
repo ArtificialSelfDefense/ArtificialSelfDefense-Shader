@@ -21,6 +21,7 @@ uniform sampler2D COLOR_NORMAL;
 uniform sampler2D DEPTH_OPAQUE;
 
 uniform mat4 u_inv_proj;//projection transformation的反矩陣
+uniform mat4 u_proj;
 //uniform為iris傳進來的全域唯讀變數，本身就包含in的意思、mat4為4*4矩陣
 //sampler2D告訴 GPU 這是一張 2D 貼圖，叫硬體採樣器準備隨時去這張貼圖裡拿顏色
 //目前有三個2D貼圖，COLOR_MAIN(colortex0),COLOR_NORMAL(colortex1),DEPTH_OPAQUE(depthtex0)
@@ -49,6 +50,75 @@ vec3 getViewNormal(vec2 uv) {
     return normalize(normal * 2.0 - 1.0);//3. 解碼 (Decoding)：將 G-Buffer 的 0~1 RGBA 顏色，換回真正的 [-1.0, 1.0] View Normal 向量
 }
 
+// 3. 畫面偽隨機數生成器 (Pseudo-Random Generator)
+float hash(vec2 p) {
+    p = fract(p * vec2(123.34, 456.21));
+    p += dot(p, p + 45.32);
+    return fract(p.x * p.y);
+}
+
+// 4. 生成法線半球內的隨機方向 (Cosine-Weighted Hemisphere Sampling)
+vec3 getCosineSampleHemisphere(vec3 N, vec2 uv) {
+    // 產生兩個 0~1 的亂數
+    float r1 = hash(uv);
+    float r2 = hash(uv + vec2(0.571, 0.239));
+
+    // 計算半球座標
+    float phi = 2.0 * 3.14159265359 * r1;
+    float r = sqrt(r2);
+    float x = r * cos(phi);
+    float y = r * sin(phi);
+    float z = sqrt(1.0 - r2); // 沿著法線朝外的分量
+
+    // 建立建構半球的切線空間 (Tangent Space Basis)
+    vec3 up = abs(N.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+    vec3 tangent = normalize(cross(up, N));
+    vec3 bitangent = cross(N, tangent);
+
+    // 轉回 View Space 的半球隨機向量
+    return normalize(tangent * x + bitangent * y + N * z);
+}
+
+// 5. View Space 轉 Screen UV (0~1) 與 Depth (0~1)
+vec3 viewToScreen(vec3 viewPos) {
+    vec4 clipPos = u_proj * vec4(viewPos, 1.0);
+    vec3 ndcPos = clipPos.xyz / clipPos.w;
+    return ndcPos * 0.5 + 0.5;
+}
+
+// 6. 螢幕空間光線步進 (Screen-Space Ray Marching)
+bool traceRay(vec3 origin, vec3 dir, out vec2 hitUV) {
+    float stepSize = 0.4;  // 每一步往前走多少 View Space 單位 (可調)
+    int maxSteps = 32;     // 最大步進次數 (可調)
+    
+    // 關鍵！起點往法線推開一點點，防止「自碰撞 (Self-Intersection)」
+    vec3 currentPos = origin + dir * 0.1;
+
+    for (int i = 0; i < maxSteps; i++) {
+        currentPos += dir * stepSize;
+
+        // 轉回 Screen Space
+        vec3 screenPos = viewToScreen(currentPos);
+
+        // 如果光線步進飛出螢幕範圍，停止搜尋
+        if (screenPos.x < 0.0 || screenPos.x > 1.0 || 
+            screenPos.y < 0.0 || screenPos.y > 1.0 || 
+            screenPos.z < 0.0 || screenPos.z > 1.0) {
+            break;
+        }
+
+        // 去 G-Buffer 查這個 UV 點真實的場景深度
+        float sceneDepth = texture(DEPTH_OPAQUE, screenPos.xy).r;
+
+        // 碰撞檢測：光線當前深度 > 場景深度，且厚度容忍值在 0.02 內
+        if (screenPos.z > sceneDepth && (screenPos.z - sceneDepth) < 0.02) {
+            hitUV = screenPos.xy;
+            return true; // 撞到物體！
+        }
+    }
+    return false; // 沒撞到
+}
+
 
 
 
@@ -61,7 +131,26 @@ void main() {
     vec3 viewNormal = getViewNormal(v_texcoord);//同上
 
 
-    color.rgb = viewNormal * 0.5 + 0.5;     
+// 1. 生成半球隨機方向
+    vec3 rayDir = getCosineSampleHemisphere(viewNormal, v_texcoord);
+
+    // 2. 步進發射探針
+    vec2 hitUV;
+    vec3 indirectLight = vec3(0.0);
+
+    if (traceRay(viewPos, rayDir, hitUV)) {
+        // 撞到物體！偷取撞擊點的 Albedo 顏色作為間接光
+        indirectLight = texture(COLOR_MAIN, hitUV).rgb;
+    } else {
+        // 沒撞到物體，給一點微弱的天空環境光 (Sky Ambient)
+        indirectLight = vec3(0.05, 0.07, 0.1);
+    }
+
+    // 3. 測試輸出：先只看純間接光 (Raw Indirect Light)！
+    o_color = vec4(indirectLight, 1.0);
+
+
+
           
     /*
     測試depth:
