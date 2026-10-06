@@ -165,13 +165,29 @@ void main() {
         }
     }
 
-    // 驗證測試：如果撞到物體，輸出綠色；沒撞到輸出黑色
+    // --- 正式光影合成 (Color Bleeding) ---
+    vec3 finalColor = color.rgb;
+
+    if (hit) {
+        // 間接光強度倍率 (Bounce Strength)，可依喜好微調 (例如 0.5 ~ 1.2)
+        float bounceStrength = 0.8;
+        
+        // 把採樣到的彈射光乘以衰減強度，疊加回原本的像素顏色上
+        vec3 bounceLight = hitColor * hitAtten * bounceStrength;
+        finalColor += bounceLight;
+    }
+
+    o_color = vec4(finalColor, color.a);
+    
+    
+    
+    /* 驗證測試：如果撞到物體，輸出綠色；沒撞到輸出黑色
     if (hit) {
         o_color = vec4(0.0, 1.0, 0.0, 1.0); // 綠色代表撞擊成功
     } else {
         o_color = vec4(0.0, 0.0, 0.0, 1.0); // 黑色代表未撞擊
     }
-
+    */
     
 
     /*
