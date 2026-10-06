@@ -38,27 +38,27 @@ out vec4 o_color;
 
 
 
-vec3 getViewPosition(vec2 uv) {
+vec3 get_view_space_position(vec2 uv) {
     float depth = texture(DEPTH_OPAQUE, uv).r;//texture(a,b)是glsl內建的function，a代表要去哪個貼圖抓、b代表要抓貼圖的哪個位置。.r就是只取red，但深度圖的rgb都一樣所以隨便取，約定成俗取r
     vec3 ndcPos = vec3(uv, depth)*2-1;//因為NDC規定畫面中心要是(0,0)，所以把uv的depth補回來之後，要整個"乘2減1"，讓uv的數學座標都正確
     vec4 clipPos = gbufferProjectionInverse * vec4(ndcPos, 1.0);//clip在projection乘完後還是4維的，補上 w=1.0 方便進行 4x4 矩陣運算，然後乘以"反projection矩陣"得到clip space
     return clipPos.xyz / clipPos.w;//透視除法(除以 w 抵銷透視縮放)
 }
 
-vec3 getViewNormal(vec2 uv) {
+vec3 get_view_space_normal(vec2 uv) {
     vec3 normal = texture(COLOR_NORMAL, uv).xyz;// 1. 從 COLOR_NORMAL (colortex1) 採樣出在 gbuffers_terrain 存進去的 RGB 數值
     if (length(normal) < 0.01) return vec3(0.0, 0.0, 1.0); // 2. 如果這像素根本沒畫任何東西 (天空/無幾何區)，深度/法線長度接近 0，直接回傳預設的「朝向相機正面 (0, 0, 1)」方向向量，避免後續光照計算爆掉 (NaN)
     return normalize(normal * 2.0 - 1.0);//3. 解碼 (Decoding)：將 G-Buffer 的 0~1 RGBA 顏色，換回真正的 [-1.0, 1.0] View Normal 向量
 }
 
-vec2 projectViewToUV(vec3 viewPos, mat4 projMatrix) {//view space轉uv
-    vec4 clipPos = projMatrix * vec4(viewPos, 1.0);
+vec2 view_space_to_uv(vec3 viewPos, mat4 projMat) {
+    vec4 clipPos = projMat * vec4(viewPos, 1.0);
     vec3 ndc = clipPos.xyz / clipPos.w; 
     return ndc.xy * 0.5 + 0.5;
 }
 
 // 根據像素 UV 生成 Simple 隨機 half-sphere 方向向量 (View Space)
-vec3 getSampleDirection(vec3 N, vec2 uv) {
+vec3 sample_half_sphere(vec3 N, vec2 uv) {
     
     float rand1 = fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453);//fract()=去整數只留小數。這麼做是因為glsl沒有random()函數，只能自己搓
     float rand2 = fract(sin(dot(uv, vec2(39.3461, 11.1351))) * 43758.5453);//步驟為把uv跟一個很亂的vec2內積>得到混合的純量>取sin(-1~1)>乘以一個大數>只留小數點，這樣得到uv只要變一點整個rand就會劇變，達到random效果
@@ -79,7 +79,7 @@ vec3 getSampleDirection(vec3 N, vec2 uv) {
 }
 
 // 距離衰減函式 (防爆 + 平滑歸零)
-float calculateAttenuation(float dist, float maxDist) {
+float circle_fade_out(float dist, float maxDist) {
     // 1. 防爆：分母加 0.1 避免除以零與近距離爆白
     float atten = 1.0 / (dist * dist + 0.7);
     
@@ -101,8 +101,8 @@ float calculateAttenuation(float dist, float maxDist) {
 
 void main() {
     // 1. 定義 P 點與 N 法線
-    vec3 P = getViewPosition(v_texcoord);
-    vec3 N = getViewNormal(v_texcoord);
+    vec3 P = get_view_space_position(v_texcoord);
+    vec3 N = get_view_space_normal(v_texcoord);
 
     // 2. 驗證過濾天空：如果是天空，直接刷成亮紅色
     float depth = texture(DEPTH_OPAQUE, v_texcoord).r;
@@ -112,12 +112,12 @@ void main() {
     }
 
     // 3. 取得發射方向 (View Space 中的半球隨機方向)
-    vec3 rayDir = getSampleDirection(N, v_texcoord);
+    vec3 rayDir = sample_half_sphere(N, v_texcoord);
 
     vec4 color = texture(COLOR_MAIN, v_texcoord);
     o_color=color;
     
-    // 4. Raymarching 步進參數設定
+    // Raymarching setting
     int maxSteps = 16;            // 最大步進次數
     float stepSize = 0.1;         // 每一步採樣的距離 (View Space 單位)
     bool hit = false;
@@ -127,9 +127,9 @@ void main() {
     
     // 定義最大射程，用來計算衰減比例
     float maxDist = float(maxSteps) * stepSize; // 16 * 0.1 = 1.6 單位
-    float hitAtten = 0.0;                       // 用來存這條光線的衰減強度
+    float ssptFadeout = 0.0;                       // 用來存這條光線的衰減強度
 
-    // [NEW] SSAO 專用宣告
+    //SSAO
     float ssaoOcclusion = 0.0;
     int ssaoSamples = 8;
     float ssaoRadius = 0.4;
@@ -137,15 +137,15 @@ void main() {
     // --- [NEW] SSAO 牆角遮擋計算 ---
     for (int i = 0; i < ssaoSamples; i++) {
         vec2 sampleUVOffset = v_texcoord + vec2(float(i) * 0.0517, float(i) * 0.1319);
-        vec3 ssaoDir = getSampleDirection(N, sampleUVOffset);
+        vec3 ssaoDir = sample_half_sphere(N, sampleUVOffset);
         
         float scale = float(i + 1) / float(ssaoSamples);
         scale = scale * scale; 
         
         vec3 samplePos = P + ssaoDir * (ssaoRadius * scale);
         
-        vec2 sampleUV = projectViewToUV(samplePos, gbufferProjection);
-        vec3 scenePos = getViewPosition(sampleUV);
+        vec2 sampleUV = view_space_to_uv(samplePos, gbufferProjection);
+        vec3 scenePos = get_view_space_position(sampleUV);
         
         float depthDiff = scenePos.z - samplePos.z;
         if (depthDiff > 0.01 && depthDiff < ssaoRadius) {
@@ -168,7 +168,7 @@ void main() {
         vec3 rayPos = rayStart + rayDir * (float(i) * stepSize);
 
         // 將 3D 光線位置投影回螢幕 UV 座標
-        vec2 rayUV = projectViewToUV(rayPos, gbufferProjection);
+        vec2 rayUV = view_space_to_uv(rayPos, gbufferProjection);
 
         // 如果光線跑出螢幕外，直接終止 raymarching
         if (rayUV.x < 0.0 || rayUV.x > 1.0 || rayUV.y < 0.0 || rayUV.y > 1.0) {
@@ -176,7 +176,7 @@ void main() {
         }
 
         // 取出光線所指位置的「真實場景深度」
-        vec3 scenePos = getViewPosition(rayUV);
+        vec3 scenePos = get_view_space_position(rayUV);
 
         // 深度比對：在 View Space 中，Z 軸通常為負值 (或者離相機越遠 Z 越大/小)
         // 判斷光線是否踩到了物體後面 (這裡假設 Z 是負值，越遠 Z 越小)
@@ -186,7 +186,7 @@ void main() {
             
             // --- 核心新增：計算 3D 距離並帶入衰減 ---
             float hitDist = distance(P, scenePos);
-            hitAtten = calculateAttenuation(hitDist, maxDist);
+            ssptFadeout = circle_fade_out(hitDist, maxDist);
             
             hitColor = texture(COLOR_MAIN, rayUV).rgb;
             break;
@@ -205,7 +205,7 @@ void main() {
         float bounceStrength = 0.8;
         
         // 把採樣到的彈射光乘以衰減強度，疊加回原本的像素顏色上
-        vec3 bounceLight = hitColor * hitAtten * bounceStrength;
+        vec3 bounceLight = hitColor * ssptFadeout * bounceStrength;
         finalColor += bounceLight;
     }
 
@@ -238,8 +238,8 @@ void main() {
     vec4 color = texture(COLOR_MAIN, v_texcoord);
 
 
-    vec3 viewPos = getViewPosition(v_texcoord);//函式，自己看
-    vec3 viewNormal = getViewNormal(v_texcoord);//同上
+    vec3 viewPos = get_view_space_position(v_texcoord);//函式，自己看
+    vec3 viewNormal = get_view_space_normal(v_texcoord);//同上
     
     
     float depth = texture(DEPTH_OPAQUE, v_texcoord).r;
@@ -260,8 +260,8 @@ void main() {
     vec4 color = texture(COLOR_MAIN, v_texcoord);
 
 
-    vec3 viewPos = getViewPosition(v_texcoord);//函式，自己看
-    vec3 viewNormal = getViewNormal(v_texcoord);//同上    
+    vec3 viewPos = get_view_space_position(v_texcoord);//函式，自己看
+    vec3 viewNormal = get_view_space_normal(v_texcoord);//同上    
 
     
     color.rgb = viewNormal * 0.5 + 0.5;
