@@ -81,7 +81,7 @@ vec3 getSampleDirection(vec3 N, vec2 uv) {
 // 距離衰減函式 (防爆 + 平滑歸零)
 float calculateAttenuation(float dist, float maxDist) {
     // 1. 防爆：分母加 0.1 避免除以零與近距離爆白
-    float atten = 1.0 / (dist * dist + 0.1);
+    float atten = 1.0 / (dist * dist + 0.7);
     
     // 2. 計算 0~1 的距離比例，並限制在範圍內
     float factor = clamp(1.0 - (dist / maxDist), 0.0, 1.0);//
@@ -129,7 +129,35 @@ void main() {
     float maxDist = float(maxSteps) * stepSize; // 16 * 0.1 = 1.6 單位
     float hitAtten = 0.0;                       // 用來存這條光線的衰減強度
 
-    
+    // [NEW] SSAO 專用宣告
+    float ssaoOcclusion = 0.0;
+    int ssaoSamples = 8;
+    float ssaoRadius = 0.4;
+
+    // --- [NEW] SSAO 牆角遮擋計算 ---
+    for (int i = 0; i < ssaoSamples; i++) {
+        vec2 sampleUVOffset = v_texcoord + vec2(float(i) * 0.0517, float(i) * 0.1319);
+        vec3 ssaoDir = getSampleDirection(N, sampleUVOffset);
+        
+        float scale = float(i + 1) / float(ssaoSamples);
+        scale = scale * scale; 
+        
+        vec3 samplePos = P + ssaoDir * (ssaoRadius * scale);
+        
+        vec2 sampleUV = projectViewToUV(samplePos, gbufferProjection);
+        vec3 scenePos = getViewPosition(sampleUV);
+        
+        float depthDiff = scenePos.z - samplePos.z;
+        if (depthDiff > 0.01 && depthDiff < ssaoRadius) {
+            float dist = distance(P, scenePos);
+            float rangeCheck = smoothstep(ssaoRadius, 0.0, dist);
+            ssaoOcclusion += 1.0 * rangeCheck;
+        }
+    }
+
+    float aoFactor = clamp(1.0 - (ssaoOcclusion / float(ssaoSamples)), 0.0, 1.0);
+    aoFactor = pow(aoFactor, 2.0); 
+    // -----------------------------
 
 
     vec3 rayStart = P + N * 0.05; // 往法線方向推開 0.05 單位
@@ -137,7 +165,7 @@ void main() {
     // 開始沿光線前進
     for (int i = 1; i <= maxSteps; i++) {
         // 計算光線當前的 3D 位置 (先不加 Bias)
-        vec3 rayPos = P + rayDir * (float(i) * stepSize);
+        vec3 rayPos = rayStart + rayDir * (float(i) * stepSize);
 
         // 將 3D 光線位置投影回螢幕 UV 座標
         vec2 rayUV = projectViewToUV(rayPos, gbufferProjection);
@@ -165,8 +193,12 @@ void main() {
         }
     }
 
+
+
+
+
     // --- 正式光影合成 (Color Bleeding) ---
-    vec3 finalColor = color.rgb;
+    vec3 finalColor = color.rgb * aoFactor;
 
     if (hit) {
         // 間接光強度倍率 (Bounce Strength)，可依喜好微調 (例如 0.5 ~ 1.2)
@@ -177,7 +209,8 @@ void main() {
         finalColor += bounceLight;
     }
 
-    o_color = vec4(finalColor, color.a);
+    o_color = vec4(finalColor, color.a); //最終輸出
+    //o_color = vec4(vec3(aoFactor), 1.0); //AO測試
     
     
     
