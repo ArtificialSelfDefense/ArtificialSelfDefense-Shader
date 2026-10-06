@@ -78,6 +78,18 @@ vec3 getSampleDirection(vec3 N, vec2 uv) {
     return normalize(tangent * localDir.x + bitangent * localDir.y + N * localDir.z);//線性組合，即新的xyz(tangent,bitangent,N，即TBN)的分量組合
 }
 
+// 距離衰減函式 (防爆 + 平滑歸零)
+float calculateAttenuation(float dist, float maxDist) {
+    // 1. 防爆：分母加 0.1 避免除以零與近距離爆白
+    float atten = 1.0 / (dist * dist + 0.1);
+    
+    // 2. 計算 0~1 的距離比例，並限制在範圍內
+    float factor = clamp(1.0 - (dist / maxDist), 0.0, 1.0);//
+    
+    // 3. 用 factor * factor 讓邊界平滑淡出到 0
+    return atten * (factor * factor);
+}
+
 
 
 
@@ -112,8 +124,14 @@ void main() {
     vec3 hitColor = vec3(0.0);
     float bias = 0.005;
     float thickness = 0.5;
+    
+    // 定義最大射程，用來計算衰減比例
+    float maxDist = float(maxSteps) * stepSize; // 16 * 0.1 = 1.6 單位
+    float hitAtten = 0.0;                       // 用來存這條光線的衰減強度
 
     
+
+
     vec3 rayStart = P + N * 0.05; // 往法線方向推開 0.05 單位
 
     // 開始沿光線前進
@@ -137,6 +155,11 @@ void main() {
         float depthDiff = scenePos.z - rayPos.z;
         if (depthDiff >= bias && depthDiff < thickness) {
             hit = true;
+            
+            // --- 核心新增：計算 3D 距離並帶入衰減 ---
+            float hitDist = distance(P, scenePos);
+            hitAtten = calculateAttenuation(hitDist, maxDist);
+            
             hitColor = texture(COLOR_MAIN, rayUV).rgb;
             break;
         }
@@ -150,7 +173,6 @@ void main() {
     }
 
     
-
 
     /*
     純顏色無shadow:
