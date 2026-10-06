@@ -3,12 +3,15 @@
 2.composite的用途是"post-processing"
 3.因為要做screen space path tracing，所以要從算好的像素推回view space(做projection前的狀態)。
   正向順序為:m>v>p>clip>透視除法>ndc>像素，反向即得到逆順序。注意其中透視除法不是線性運算，所以會透過一些手段來反推
-4.sspt的想法:螢幕的每個像素對應一個遊戲裡的點>取該點(P點)的normal(N)>向外發射光線>撞到就把撞到地方的顏色用一些方式弄回原本的發射點
+4.sspt的想法:螢幕的每個像素對應一個遊戲裡的點>取該點(P點)的normal(N)>向外發射光線>撞到就把撞到地方的顏色弄回P點
+5.全部的view space單位都是1格方塊
 */
 /*
 常用語法:
 1.texture(a,b)。 這是glsl內建的function，a代表要去哪個貼圖抓、b代表要抓貼圖的哪個位置
 2.clamp(x,minValue,maxValue)。 clamp(車速,最小車速,最大車速)代表不管怎麼跑範圍都在最大跟最小中間，超過壓成最大，太小就拉到最小
+3.fract()=去整數只留小數
+4.abs()是絕對值(absolute value)
 */
 
 
@@ -63,7 +66,7 @@ vec2 view_space_to_uv(vec3 viewPos, mat4 projMat) {
 
 vec3 sample_half_sphere(vec3 N, vec2 uv) {
     
-    float rand1 = fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453);//fract()=去整數只留小數。這麼做是因為glsl沒有random()函數，只能自己搓
+    float rand1 = fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453);//glsl沒有random()函數，只能自己搓
     float rand2 = fract(sin(dot(uv, vec2(39.3461, 11.1351))) * 43758.5453);//步驟為把uv跟一個很亂的vec2內積>得到混合的純量>取sin(-1~1)>乘以一個大數>只留小數點，這樣得到uv只要變一點整個rand就會劇變，達到random效果
     
     // 生成Hemisphere的xyz座標
@@ -74,7 +77,7 @@ vec3 sample_half_sphere(vec3 N, vec2 uv) {
     vec3 localDir = vec3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);//根據簡單的3D幾何，可以把最後發射的光線方向的xyz座標寫成這樣
     
     // 把半球的暫時座標對齊法線(TBN)
-    vec3 helper = abs(N.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);//找一個向量幫忙外積。abs是絕對值(absolute value)
+    vec3 helper = abs(N.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);//找一個向量幫忙外積。這邊找0,0,1，如果N本身就是0,0,1就會把這個向量換成1,0,0
     vec3 tangent = normalize(cross(helper, N));//讓真正的normal跟剛剛的那個不平行向量外積，得到一個不相交的向量並變成單位向量，當作p點的切線
     vec3 bitangent = cross(N, tangent);//把p點的切線再跟normal外積，得到第二個切線(bitangent)
     
@@ -119,21 +122,22 @@ void main() {
     // 1. 定義 P 點與 N 法線
     vec3 P = get_view_space_position(v_texcoord);
     vec3 N = get_view_space_normal(v_texcoord);
+    vec3 rayStart = P + N * 0.05; // 為避免自己插自己，把起始位置做個微小偏移
 
-    // 2. 驗證過濾天空：如果是天空，直接刷成亮紅色
+
+    // 2. 過濾天空：如果是天空，直接刷成紅色
     float depth = texture(DEPTH_OPAQUE, v_texcoord).r;
     if (depth >= 1.0) {
         o_color = vec4(1.0, 0.0, 0.0, 1.0);
         return;
     }
 
+
     // 3. 取得隨機半球方向
     vec3 rayDir = sample_half_sphere(N, v_texcoord);
 
-    vec4 color = texture(COLOR_MAIN, v_texcoord);
-    o_color=color;
     
-    // 4. 定義需要的Raymarching setting
+    // 4. 定義Raymarching係數
     int maxSteps = 16;
     float stepSize = 0.1;
     bool hit = false;
@@ -141,16 +145,19 @@ void main() {
     float bias = 0.005;
     float thickness = 0.5;
     
-    // 定義最大射程，用來計算衰減比例
-    float maxDistance = float(maxSteps) * stepSize; // 16 * 0.1 = 1.6 單位
+
+    // 5.定義最大sspt範圍，用來算光線衰減
+    float maxDistance = float(maxSteps) * stepSize;
     float ssptFadeout;                       // 用來存這條光線的衰減強度
 
-    //SSAO
+
+    // 6.定義SSAO係數
     float ssaoOcclusion = 0.0;
     int ssaoSamples = 8;
     float ssaoRadius = 0.4;
 
-    // --- [NEW] SSAO 牆角遮擋計算 ---
+
+    // 7.SSAO
     for (int i = 0; i < ssaoSamples; i++) {
         vec2 sampleUVOffset = v_texcoord + vec2(float(i) * 0.0517, float(i) * 0.1319);
         vec3 ssaoDir = sample_half_sphere(N, sampleUVOffset);
@@ -173,12 +180,9 @@ void main() {
 
     float aoFactor = clamp(1.0 - (ssaoOcclusion / float(ssaoSamples)), 0.0, 1.0);
     aoFactor = pow(aoFactor, 2.0); 
-    // -----------------------------
 
 
-    vec3 rayStart = P + N * 0.05; // 往法線方向推開 0.05 單位
-
-    // 開始沿光線前進
+    // 8.Raymarching
     for (int i = 1; i <= maxSteps; i++) {
         // 計算光線當前的 3D 位置 (先不加 Bias)
         vec3 rayPos = rayStart + rayDir * (float(i) * stepSize);
@@ -210,10 +214,8 @@ void main() {
     }
 
 
-
-
-
-    // --- 正式光影合成 (Color Bleeding) ---
+    // 9.Color Bleeding
+    vec4 color = texture(COLOR_MAIN, v_texcoord);
     vec3 finalColor = color.rgb * aoFactor;
 
     if (hit) {
