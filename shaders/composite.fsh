@@ -17,8 +17,8 @@
 
 #version 330 compatibility
 
-#define RAY_MAX_STEPS 16 // [8 12 16 24 32 48 64]
-#define RAY_STEP_SIZE 0.10 // [0.02 0.05 0.10 0.15 0.20 0.30 0.50]
+#define Ray_Max_Step 16 // [8 12 16 24 32 48 64]
+#define Ray_Step_Size 0.10 // [0.02 0.05 0.10 0.15 0.20 0.30 0.50]
 
 
 
@@ -155,12 +155,13 @@ void main() {
 
     
     // 4. 定義Raymarching係數
-    int maxSteps = RAY_MAX_STEPS;
-    float stepSize = RAY_STEP_SIZE;
+    int maxSteps = Ray_Max_Step;
+    float stepSize = Ray_Step_Size;
     bool hit = false;
     vec3 hitColor = vec3(0.0);
     float bias = 0.005;
     float thickness = 0.5;
+    float indirLighStren = 1.2;
     
 
     // 5.定義最大sspt範圍，用來算光線衰減
@@ -236,11 +237,7 @@ void main() {
     vec3 finalColor = color.rgb * aoFactor;
 
     if (hit) {
-        // 間接光強度倍率 (Bounce Strength)，可依喜好微調 (例如 0.5 ~ 1.2)
-        float bounceStrength = 0.8;
-        
-        // 把採樣到的彈射光乘以衰減強度，疊加回原本的像素顏色上
-        vec3 bounceLight = hitColor * ssptFadeout * bounceStrength;
+        vec3 bounceLight = hitColor * ssptFadeout * indirLighStren;
         finalColor += bounceLight;
     }
 
