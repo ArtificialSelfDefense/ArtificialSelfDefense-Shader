@@ -1,4 +1,8 @@
 #version 330 compatibility
+
+
+#define Bilateral_Denoise
+
 #include "Define_ColorTex.glsl"
 #include "Define_DepthTex.glsl"
 #include "Define_Engine.glsl"
@@ -24,11 +28,15 @@ out vec4 o_color;// 指定輸出到 colortex0 (COLOR_MAIN)
 
 // 輔助函式：線性化深度 (Linearize Depth)
 float get_linear_depth(vec2 uv) {
-    float depth = texture(depthtex0, uv).r;
+    float depth = texture(DEPTH_OPAQUE, uv).r;
     return 1.0 / (depth * -99.0 + 100.0); 
 }
 
 void main() {
+#ifdef Bilateral_Denoise
+
+
+
     vec2 texelSize = 1.0 / vec2(viewWidth, viewHeight); // 單一像素大小
     
     vec4 centerColor = texture(COLOR_MAIN, v_texcoord);
@@ -71,7 +79,12 @@ void main() {
             totalWeight += weight;
         }
     }
-
-    // 輸出歸一化後的降噪色彩
     o_color = totalWeight > 0.0 ? (accumulatedColor / totalWeight) : centerColor;
+
+
+
+
+#else
+    o_color = texture(COLOR_MAIN, v_texcoord);
+#endif
 }
