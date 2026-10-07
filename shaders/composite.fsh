@@ -16,6 +16,13 @@
 
 
 #version 330 compatibility
+
+#define RAY_MAX_STEPS 16 // [8 12 16 24 32 48 64]
+#define RAY_STEP_SIZE 0.10 // [0.02 0.05 0.10 0.15 0.20 0.30 0.50]
+
+
+
+
 #include "Define_ColorTex.glsl"
 #include "Define_DepthTex.glsl"
 #include "Define_Engine.glsl"
@@ -148,8 +155,8 @@ void main() {
 
     
     // 4. 定義Raymarching係數
-    int maxSteps = 16;
-    float stepSize = 0.1;
+    int maxSteps = RAY_MAX_STEPS;
+    float stepSize = RAY_STEP_SIZE;
     bool hit = false;
     vec3 hitColor = vec3(0.0);
     float bias = 0.005;
