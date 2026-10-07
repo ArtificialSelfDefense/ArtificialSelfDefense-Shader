@@ -17,8 +17,10 @@
 
 #version 330 compatibility
 
-#define Ray_Max_Step 16 // [8 12 16 24 32 48 64]
+#define Ray_Max_Step 64 // [8 10 20 30 40 50 60 64 70 80 90 100 200]
 #define Ray_Step_Size 0.10 // [0.02 0.05 0.10 0.15 0.20 0.30 0.50]
+#define Avoid_Fuck_Bright_Value 1.7 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
+#define Indirect_Light_Strengh 1.0 //[0.2 0.4 0.6 0.8 1.0 1.2 1.4 1.6 1.8 2.0]
 
 
 
@@ -103,7 +105,7 @@ vec3 sample_half_sphere(vec3 N, vec2 uv) {
 
 float circle_fade_out(float distance, float maxDistance) {
     
-    float attenuate = 1.0 / (distance*distance + 0.7);// 即平方反比(1/d^2)，為了避免d很近整個炸亮度所以加一項。attenuate=衰減
+    float attenuate = 1.0 / (distance*distance + Avoid_Fuck_Bright_Value);// 即平方反比(1/d^2)，為了避免d很近整個炸亮度所以加一項。attenuate=衰減
     
     float factor = clamp(1.0-(distance/maxDistance) , 0 , 1);//factor=係數
     
@@ -155,17 +157,15 @@ void main() {
 
     
     // 4. 定義Raymarching係數
-    int maxSteps = Ray_Max_Step;
-    float stepSize = Ray_Step_Size;
+
     bool hit = false;
     vec3 hitColor = vec3(0.0);
     float bias = 0.005;
     float thickness = 0.5;
-    float indirLighStren = 1.2;
     
 
     // 5.定義最大sspt範圍，用來算光線衰減
-    float maxDistance = float(maxSteps) * stepSize;
+    float maxDistance = 10;//float(Ray_Max_Step) * Ray_Step_Size;
     float ssptFadeout;                       // 用來存這條光線的衰減強度
 
 
@@ -201,9 +201,9 @@ void main() {
 
 
     // 8.Raymarching
-    for (int i = 1; i <= maxSteps; i++) {
+    for (int i = 1; i <= Ray_Max_Step; i++) {
         // 計算光線當前的 3D 位置 (先不加 Bias)
-        vec3 rayPos = rayStart + rayDir * (float(i) * stepSize);
+        vec3 rayPos = rayStart + rayDir * (float(i) * Ray_Step_Size);
 
         // 將 3D 光線位置投影回螢幕 UV 座標
         vec2 rayUV = view_space_to_uv(rayPos, gbufferProjection);
@@ -237,7 +237,18 @@ void main() {
     vec3 finalColor = color.rgb * aoFactor;
 
     if (hit) {
-        vec3 bounceLight = hitColor * ssptFadeout * indirLighStren;
+        // --- 核心新增：計算餘弦衰減 N dot L ---
+        // rayDir 是從 P 點發射出去的方向，N 是 P 點的法線
+        // dot(N, rayDir) 即為 cos(theta)，角度越傾斜（接近 90 度），強度越接近 0
+        float NdotL = max(0.0, dot(N, rayDir));
+
+        // 漫反射表面吸收率 (Albedo Bounce Factor)
+        // 非發光體牆面反射光線時會吸收大部分能量，一般設定在 0.2 ~ 0.4，防止能量爆炸
+        float bounceAlbedo = 0.3;
+
+        // 將 NdotL 乘進間接光累積中
+        vec3 bounceLight = hitColor * ssptFadeout * NdotL * bounceAlbedo * Indirect_Light_Strengh * aoFactor;
+        
         finalColor += bounceLight;
     }
 

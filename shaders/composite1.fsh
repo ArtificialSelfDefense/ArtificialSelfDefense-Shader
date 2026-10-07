@@ -1,7 +1,7 @@
 #version 330 compatibility
 
 
-#define Bilateral_Denoise
+//#define Bilateral_Denoise
 
 #include "Define_ColorTex.glsl"
 #include "Define_DepthTex.glsl"
