@@ -27,9 +27,13 @@ in vec2 v_texcoord;
 uniform sampler2D COLOR_MAIN;
 uniform sampler2D COLOR_NORMAL;
 uniform sampler2D DEPTH_OPAQUE;
+uniform sampler2D blue_noise_tex;
 
 uniform mat4 gbufferProjectionInverse;
 uniform mat4 gbufferProjection;
+
+uniform float viewWidth;
+uniform float viewHeight;
 //uniform為iris傳進來的全域唯讀變數，本身就包含in的意思、mat4為4*4矩陣
 //sampler2D告訴 GPU 這是一張 2D 貼圖，叫硬體採樣器準備隨時去這張貼圖裡拿顏色
 //目前有三個2D貼圖，COLOR_MAIN(colortex0),COLOR_NORMAL(colortex1),DEPTH_OPAQUE(depthtex0)
@@ -64,10 +68,16 @@ vec2 view_space_to_uv(vec3 viewPos, mat4 projMat) {
     return ndc.xy * 0.5 + 0.5;
 }
 
-vec3 sample_half_sphere(vec3 N, vec2 uv) {
+vec4 get_blue_noise(vec2 texcoord) {
     
-    float rand1 = fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453);//glsl沒有random()函數，只能自己搓
-    float rand2 = fract(sin(dot(uv, vec2(39.3461, 11.1351))) * 43758.5453);//步驟為把uv跟一個很亂的vec2內積>得到混合的純量>取sin(-1~1)>乘以一個大數>只留小數點，這樣得到uv只要變一點整個rand就會劇變，達到random效果
+    vec2 noiseUV = (texcoord * vec2(viewWidth, viewHeight)) / 128.0;
+    return texture(blue_noise_tex, noiseUV);
+}
+
+vec3 sample_half_sphere(vec3 N, vec2 uv) {
+    vec4 noise = get_blue_noise(uv);
+    float rand1 = noise.r;//取r通道noise隨機
+    float rand2 = noise.g;//取g通道
     
     // 生成Hemisphere的xyz座標
     float phi = 6.2831853 * rand1;//一圈圓形的弧度，即2*pi，取名為phi。在此取隨機
