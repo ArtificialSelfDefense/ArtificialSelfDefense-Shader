@@ -21,6 +21,7 @@
 #define Ray_Step_Size 0.10 // [0.02 0.05 0.10 0.15 0.20 0.30 0.50]
 #define Avoid_Fuck_Bright_Value 1.7 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
 #define Indirect_Light_Strengh 1.0 //[0.2 0.4 0.6 0.8 1.0 1.2 1.4 1.6 1.8 2.0]
+#define Ambient_Strength 0.05 // [0.00 0.02 0.05 0.10 0.15 0.20] 
 
 
 
@@ -234,7 +235,7 @@ void main() {
 
     // 9.Color Bleeding
     vec4 color = texture(COLOR_MAIN, v_texcoord);
-    vec3 finalColor = color.rgb * aoFactor;
+    vec3 finalColor = color.rgb * aoFactor * Ambient_Strength;
 
     if (hit) {
         // --- 核心新增：計算餘弦衰減 N dot L ---
