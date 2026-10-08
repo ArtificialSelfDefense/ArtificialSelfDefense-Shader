@@ -31,9 +31,9 @@ void main() {
     }
 
 
-    float isEmission = 0.0;
+    float isEmissionBlock = 0.0;
     if (v_block_id == 10000) {
-        isEmission = 1.0;
+        isEmissionBlock = 1.0;
     }
 
 
@@ -44,5 +44,5 @@ void main() {
     // 3. 正式將資料寫入對應的 G-Buffer 貼圖
     gl_FragData[0] = albedo;        // 寫入 COLOR_MAIN (colortex0)
     gl_FragData[1] = encodedNormal; // 寫入 COLOR_NORMAL (colortex1)
-    gl_FragData[2] = vec4(vec3(isEmission), 1.0); //剩下自己看
+    gl_FragData[2] = vec4(vec3(isEmissionBlock), 1.0); //剩下自己看
 }
