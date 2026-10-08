@@ -22,7 +22,7 @@
 #define Avoid_Fuck_Bright_Value 1.7 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
 #define Indirect_Light_Strengh 1.0 //[0.2 0.4 0.6 0.8 1.0 1.2 1.4 1.6 1.8 2.0]
 #define Ambient_Strength 0.05 // [0.00 0.02 0.05 0.10 0.15 0.20] 
-
+#define Bias 0.05 // [0 0.05 0.1 0.15 0.2 0.25 0.3 0.35] 
 
 
 
@@ -142,7 +142,7 @@ void main() {
     // 1. 定義 P 點與 N 法線
     vec3 P = get_view_space_position(v_texcoord);
     vec3 N = get_view_space_normal(v_texcoord);
-    vec3 rayStart = P + N * 0.05; // 為避免自己插自己，把起始位置做個微小偏移
+    vec3 rayStart = P + N * Bias; // 為避免自己插自己，把起始位置做個微小偏移
 
 
     // 2. 過濾天空：如果是天空，直接刷成紅色
@@ -161,7 +161,6 @@ void main() {
 
     bool hit = false;
     vec3 hitColor = vec3(0.0);
-    float bias = 0.005;
     float thickness = 0.5;
     
 
@@ -203,7 +202,6 @@ void main() {
 
     // 8.Raymarching
     for (int i = 1; i <= Ray_Max_Step; i++) {
-        // 計算光線當前的 3D 位置 (先不加 Bias)
         vec3 rayPos = rayStart + rayDir * (float(i) * Ray_Step_Size);
 
         // 將 3D 光線位置投影回螢幕 UV 座標
@@ -220,7 +218,7 @@ void main() {
         // 深度比對：在 View Space 中，Z 軸通常為負值 (或者離相機越遠 Z 越大/小)
         // 判斷光線是否踩到了物體後面 (這裡假設 Z 是負值，越遠 Z 越小)
         float depthDiff = scenePos.z - rayPos.z;
-        if (depthDiff >= bias && depthDiff < thickness) {
+        if (depthDiff >= Bias && depthDiff < thickness) {
             hit = true;
             
             // --- 核心新增：計算 3D 距離並帶入衰減 ---
@@ -235,7 +233,7 @@ void main() {
 
     // 9.Color Bleeding
     vec4 color = texture(COLOR_MAIN, v_texcoord);
-    vec3 finalColor = color.rgb * aoFactor * Ambient_Strength;
+    vec3 finalColor = color.rgb * Ambient_Strength * 1; // aoFactor;
 
     if (hit) {
         // --- 核心新增：計算餘弦衰減 N dot L ---
@@ -248,7 +246,7 @@ void main() {
         float bounceAlbedo = 0.3;
 
         // 將 NdotL 乘進間接光累積中
-        vec3 bounceLight = hitColor * ssptFadeout * NdotL * bounceAlbedo * Indirect_Light_Strengh * aoFactor;
+        vec3 bounceLight = hitColor * ssptFadeout * NdotL * bounceAlbedo * Indirect_Light_Strengh * 1;
         
         finalColor += bounceLight;
     }
