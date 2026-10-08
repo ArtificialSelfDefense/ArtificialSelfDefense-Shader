@@ -19,13 +19,14 @@
 #version 330 compatibility
 
 #define Ray_Max_Step 64 // [8 10 20 30 40 50 60 64 70 80 90 100 200]
-#define Ray_Step_Size 0.10 // [0.02 0.05 0.10 0.15 0.20 0.30 0.50]
-#define Avoid_Fuck_Bright_Value 0 // [0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
+#define Ray_Step_Size 0.1 // [0.02 0.05 0.1 0.15 0.2 0.3 0.5]
+#define Avoid_Fuck_Bright_Value 0.2 // [0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
 #define Indirect_Light_Strengh 1.0 //[0.2 0.4 0.6 0.8 1.0 1.2 1.4 1.6 1.8 2.0]
-#define Ambient_Strength 0.05 // [0.00 0.02 0.05 0.10 0.15 0.20 0.5 1] 
+#define Ambient_Strength 0.1 // [0 0.02 0.05 0.1 0.15 0.2 0.5 1] 
 #define Min_Penetration_Depth 0.005 // [0 0.005 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5]
 #define Thickness 0.09 // [0 0.02 0.04 0.06 0.07 0.08 0.09 0.1 0.12]
 #define Ray_Start_Bias 0.02 // [0 0.02 0.04 0.06 0.08 0.1 0.15 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define Indirect_Light_Reflection_Rate 0.5 //[0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 
 
 
@@ -112,8 +113,8 @@ vec3 sample_half_sphere(vec3 N, vec2 uv) {
 }
 
 
-float circle_fade_out(float distance, float maxSsptDistance) {
-    float attenuate = 1.0 / (distance*distance + Avoid_Fuck_Bright_Value);// 即平方反比(1/d^2)，為了避免d很近整個炸亮度所以加一項。attenuate=衰減
+float circle_fade_out(float radiusFromLight, float maxSsptDistance) {
+    float attenuate = 1.0/ (radiusFromLight* radiusFromLight  +  Avoid_Fuck_Bright_Value);// 即平方反比(1/d^2)，為了避免d很近整個炸亮度所以加一項。attenuate=衰減
     return attenuate;
 }
 
@@ -156,13 +157,16 @@ void main() {
     vec3 rayDir = sample_half_sphere(P_Normal, v_texcoord);
 
     
-    // 4. 定義Raymarching係數
+    // 4. 定義Raymarching係數(不能調數值的or必須寫死的)
     vec3 rayStart = P + P_Normal * Ray_Start_Bias; // 避免自己插自己加個偏移
     bool hit = false;
-    vec3 hitColor;
-    float emissionBrightness = 0.5;
+    vec3 pureHitColor;
     float maxSsptDistance = float(Ray_Max_Step)* Ray_Step_Size;
     float ssptFadeoutRatio;
+    float contribution;
+    vec3 finalColor = texture(COLOR_MAIN,v_texcoord).rgb* Ambient_Strength;//還沒加上間接光的顏色
+    
+
 
 
     // 5.定義SSAO係數
@@ -205,44 +209,34 @@ void main() {
         float rayGoThroughDistance = rayPos.z  -  sceneToViewSpacePos.z;//對比兩個同樣uv座標的深度，即:1.光線當下的深度 2.螢幕上對應物體的深度，如果光線的深度比較深代表撞到東西了
         vec3 Q_Normal = get_view_space_normal(rayUV);
         
+
+        
         if (rayUV.x < 0.0 || rayUV.x > 1.0 || rayUV.y < 0.0 || rayUV.y > 1.0) {
             break;
         }
-     
-
 
         if (rayGoThroughDistance>= Min_Penetration_Depth  &&  rayGoThroughDistance< Thickness) {
             
             hit = true;
 
-            float hitDistance = distance(P, sceneToViewSpacePos);
-            ssptFadeoutRatio = circle_fade_out(hitDistance, maxSsptDistance);
+            float radiusFromLight = distance(P, sceneToViewSpacePos);
+            ssptFadeoutRatio = circle_fade_out(radiusFromLight, maxSsptDistance);
             
-            hitColor = texture(COLOR_MAIN, rayUV).rgb;
-            emissionBrightness = texture(COLOR_EMISSION, rayUV).r;
+            pureHitColor = texture(COLOR_MAIN, rayUV).rgb * texture(COLOR_EMISSION, rayUV).r;;//判斷發光與否
             break;
         }
     }
 
 
     // 8.Color Bleeding
-    vec4 color = texture(COLOR_MAIN, v_texcoord);
-    vec3 finalColor = color.rgb * Ambient_Strength * emissionBrightness ; // aoFactor;
     if (hit) {
+        contribution = clamp(dot(P_Normal, rayDir),0.0,1.0);//理論上dot在0-1，為了保險，加上限下限
 
-        float NdotL = max(0.0, dot(P_Normal, rayDir));
-
-        // 漫反射表面吸收率 (Albedo Bounce Factor)
-        // 非發光體牆面反射光線時會吸收大部分能量，一般設定在 0.2 ~ 0.4，防止能量爆炸
-        float bounceAlbedo = 0.3;
-        vec3 hitRadiance = hitColor * emissionBrightness;
-        // 將 NdotL 乘進間接光累積中
-        vec3 bounceLight = hitRadiance * ssptFadeoutRatio * NdotL * bounceAlbedo * Indirect_Light_Strengh * 1;
-        
+        vec3 bounceLight = pureHitColor* (Indirect_Light_Strengh* ssptFadeoutRatio* contribution* Indirect_Light_Reflection_Rate );//間接光可以分為: 1.間接光強度 2.跟光源的距離算出來的衰減 3.光源的貢獻程度 4.漫反射反射率(之後需要重做，因為每個方塊的漫反射反射率應該是不同的)
         finalColor += bounceLight;
     }
 
-    o_color = vec4(finalColor, color.a); //最終輸出
+    o_color = vec4(finalColor, 1.0); //最終輸出
     //o_color = vec4(vec3(aoFactor), 1.0); //AO測試
     
     
