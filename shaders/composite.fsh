@@ -39,6 +39,7 @@ in vec2 v_texcoord;
 uniform sampler2D COLOR_MAIN;
 uniform sampler2D COLOR_NORMAL;
 uniform sampler2D DEPTH_OPAQUE;
+uniform sampler2D COLOR_EMISSION;
 uniform sampler2D blue_noise_tex;
 
 uniform mat4 gbufferProjectionInverse;
@@ -163,6 +164,7 @@ void main() {
 
     bool hit = false;
     vec3 hitColor = vec3(0.0);
+    float isEmission = 0.0;
     
 
     // 5.定義最大sspt範圍，用來算光線衰減
@@ -233,6 +235,7 @@ void main() {
             ssptFadeout = circle_fade_out(hitDistance, maxDistance);
             
             hitColor = texture(COLOR_MAIN, rayUV).rgb;
+            isEmission = texture(COLOR_EMISSION, rayUV).r;
             break;
         }
     }
@@ -251,9 +254,9 @@ void main() {
         // 漫反射表面吸收率 (Albedo Bounce Factor)
         // 非發光體牆面反射光線時會吸收大部分能量，一般設定在 0.2 ~ 0.4，防止能量爆炸
         float bounceAlbedo = 0.3;
-
+        vec3 hitRadiance = hitColor * isEmission;
         // 將 NdotL 乘進間接光累積中
-        vec3 bounceLight = hitColor * ssptFadeout * NdotL * bounceAlbedo * Indirect_Light_Strengh * 1;
+        vec3 bounceLight = hitRadiance * ssptFadeout * NdotL * bounceAlbedo * Indirect_Light_Strengh * 1;
         
         finalColor += bounceLight;
     }
