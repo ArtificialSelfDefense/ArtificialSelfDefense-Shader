@@ -3,8 +3,9 @@
 2.composite的用途是"post-processing"
 3.因為要做screen space path tracing，所以要從算好的像素推回view space(做projection前的狀態)。
   正向順序為:m>v>p>clip>透視除法>ndc>像素，反向即得到逆順序。注意其中透視除法不是線性運算，所以會透過一些手段來反推
-4.sspt的想法:螢幕的每個像素對應一個遊戲裡的點>取該點(P點)的normal(N)>向外發射光線>撞到就把撞到地方的顏色弄回P點
+4.sspt的想法:螢幕的每個像素對應一個遊戲裡的點>取該點(P點)的normal(N)>向外發射光線>若當下射線的虛擬位置的深度，比對應到螢幕上的像素的深度還要深>光線撞到東西了>判斷這個方快是不是光源>是就回傳顏色(等待更新，非常粗糙的想法)
 5.全部的view space單位都是1格方塊
+6.深度圖越遠，z越大。比如天空很遠，差不多就是1，越靠近相機越接近0
 */
 /*
 常用語法:
@@ -22,8 +23,8 @@
 #define Avoid_Fuck_Bright_Value 0 // [0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
 #define Indirect_Light_Strengh 1.0 //[0.2 0.4 0.6 0.8 1.0 1.2 1.4 1.6 1.8 2.0]
 #define Ambient_Strength 0.05 // [0.00 0.02 0.05 0.10 0.15 0.20 0.5 1] 
-#define Depth_Hit_Bias 0.005 // [0 0.005 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5]
-#define Thickness 0.1 // [0 0.02 0.04 0.06 0.08 0.1 0.15 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define Min_Penetration_Depth 0.005 // [0 0.005 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5]
+#define Thickness 0.09 // [0 0.02 0.04 0.06 0.07 0.08 0.09]
 #define Ray_Start_Bias 0.02 // [0 0.02 0.04 0.06 0.08 0.1 0.15 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 
 
@@ -69,23 +70,26 @@ vec3 get_view_space_position(vec2 uv) {
     return clipPos.xyz / clipPos.w;//透視除法(除以 w 抵銷透視縮放)
 }
 
+
 vec3 get_view_space_normal(vec2 uv) {
     vec3 normal = texture(COLOR_NORMAL, uv).xyz;
     if (length(normal) < 0.01) return vec3(0.0, 0.0, 1.0); // 如果這像素是天空/無幾何區 or 深度/法線長度接近 0，回傳 (0, 0, 1)，避免NaN
     return normalize(normal * 2.0 - 1.0);// 把 G-Buffer 的 0~1 RGBA，換回 xyz的-1~1 View Normal 向量
 }
 
+
 vec2 view_space_to_uv(vec3 viewPos, mat4 projMat) {
-    vec4 clipPos = projMat * vec4(viewPos, 1.0);
+    vec4 clipPos = gbufferProjection * vec4(viewPos, 1.0);
     vec3 ndc = clipPos.xyz / clipPos.w; 
     return ndc.xy * 0.5 + 0.5;
 }
 
+
 vec4 get_blue_noise(vec2 texcoord) {
-    
     vec2 noiseUV = (texcoord * vec2(viewWidth, viewHeight)) / 128.0;
     return texture(blue_noise_tex, noiseUV);
 }
+
 
 vec3 sample_half_sphere(vec3 N, vec2 uv) {
     vec4 noise = get_blue_noise(uv);
@@ -107,18 +111,11 @@ vec3 sample_half_sphere(vec3 N, vec2 uv) {
     return normalize(tangent * localDir.x + bitangent * localDir.y + N * localDir.z);//線性組合，即新的xyz(tangent,bitangent,N，即TBN)的分量組合
 }
 
-float circle_fade_out(float distance, float maxDistance) {
-    
+
+float circle_fade_out(float distance, float maxSsptDistance) {
     float attenuate = 1.0 / (distance*distance + Avoid_Fuck_Bright_Value);// 即平方反比(1/d^2)，為了避免d很近整個炸亮度所以加一項。attenuate=衰減
-    
-    float factor = clamp(1.0-(distance/maxDistance) , 0 , 1);//factor=係數
-    
-    return attenuate * (factor*factor);// 3. 用 factor * factor 讓邊界平滑淡出到 0
+    return attenuate;
 }
-
-
-
-
 
 
 
@@ -142,13 +139,12 @@ float circle_fade_out(float distance, float maxDistance) {
 
 
 void main() {
-    // 1. 定義 P 點與 N 法線
+    // 1. 定義 P 點、N 法線與 Q 點(Q是撞擊到的像素點)
     vec3 P = get_view_space_position(v_texcoord);
-    vec3 N = get_view_space_normal(v_texcoord);
-    vec3 rayStart = P + N * Ray_Start_Bias; // 為避免自己插自己，把起始位置做個微小偏移
+    vec3 P_Normal = get_view_space_normal(v_texcoord);
 
 
-    // 2. 過濾天空：如果是天空，直接刷成紅色
+    // 2. 天空(depth>1)刷成紅色
     float depth = texture(DEPTH_OPAQUE, v_texcoord).r;
     if (depth >= 1.0) {
         o_color = vec4(1.0, 0.0, 0.0, 1.0);
@@ -156,32 +152,29 @@ void main() {
     }
 
 
-    // 3. 取得隨機半球方向
-    vec3 rayDir = sample_half_sphere(N, v_texcoord);
+    // 3. 隨機半球方向向量
+    vec3 rayDir = sample_half_sphere(P_Normal, v_texcoord);
 
     
     // 4. 定義Raymarching係數
-
+    vec3 rayStart = P + P_Normal * Ray_Start_Bias; // 避免自己插自己加個偏移
     bool hit = false;
-    vec3 hitColor = vec3(0.0);
-    float isEmission = 0.0;
-    
-
-    // 5.定義最大sspt範圍，用來算光線衰減
-    float maxDistance = float(Ray_Max_Step) * Ray_Step_Size;
-    float ssptFadeout;                       // 用來存這條光線的衰減強度
+    vec3 hitColor;
+    float emissionBrightness = 0.5;
+    float maxSsptDistance = float(Ray_Max_Step)* Ray_Step_Size;
+    float ssptFadeoutRatio;
 
 
-    // 6.定義SSAO係數
+    // 5.定義SSAO係數
     float ssaoOcclusion = 0.0;
     int ssaoSamples = 8;
     float ssaoRadius = 0.4;
 
 
-    // 7.SSAO
+    // 6.SSAO
     for (int i = 0; i < ssaoSamples; i++) {
         vec2 sampleUVOffset = v_texcoord + vec2(float(i) * 0.0517, float(i) * 0.1319);
-        vec3 ssaoDir = sample_half_sphere(N, sampleUVOffset);
+        vec3 ssaoDir = sample_half_sphere(P_Normal, sampleUVOffset);
         
         float scale = float(i + 1) / float(ssaoSamples);
         scale = scale * scale; 
@@ -189,11 +182,11 @@ void main() {
         vec3 samplePos = P + ssaoDir * (ssaoRadius * scale);
         
         vec2 sampleUV = view_space_to_uv(samplePos, gbufferProjection);
-        vec3 scenePos = get_view_space_position(sampleUV);
+        vec3 sceneToViewSpacePos = get_view_space_position(sampleUV);
         
-        float depthDiff = scenePos.z - samplePos.z;
-        if (depthDiff > 0.01 && depthDiff < ssaoRadius) {
-            float dist = distance(P, scenePos);
+        float rayGoThroughDistance = sceneToViewSpacePos.z - samplePos.z;
+        if (rayGoThroughDistance > 0.01 && rayGoThroughDistance < ssaoRadius) {
+            float dist = distance(P, sceneToViewSpacePos);
             float rangeCheck = smoothstep(ssaoRadius, 0.0, dist);
             ssaoOcclusion += 1.0 * rangeCheck;
         }
@@ -203,57 +196,52 @@ void main() {
     aoFactor = pow(aoFactor, 2.0); 
 
 
-    // 8.Raymarching
+    // 7.Raymarching
     for (int i = 1; i <= Ray_Max_Step; i++) {
-        vec3 rayPos = rayStart + rayDir * (float(i) * Ray_Step_Size);
-
-        // 將 3D 光線位置投影回螢幕 UV 座標
+        vec3 rayPos = rayStart  +  (float(i)* Ray_Step_Size)* rayDir;
         vec2 rayUV = view_space_to_uv(rayPos, gbufferProjection);
-
-        // 如果光線跑出螢幕外，直接終止 raymarching
+        vec3 sceneToViewSpacePos = get_view_space_position(rayUV);
+        
+        float rayGoThroughDistance = rayPos.z  -  sceneToViewSpacePos.z;//對比兩個同樣uv座標的深度，即:1.光線當下的深度 2.螢幕上對應物體的深度，如果光線的深度比較深代表撞到東西了
+        vec3 Q_Normal = get_view_space_normal(rayUV);
+        
         if (rayUV.x < 0.0 || rayUV.x > 1.0 || rayUV.y < 0.0 || rayUV.y > 1.0) {
             break;
         }
+     
 
-        // 取出光線所指位置的「真實場景深度」
-        vec3 scenePos = get_view_space_position(rayUV);
-
-        // 深度比對：在 View Space 中，Z 軸通常為負值 (或者離相機越遠 Z 越大/小)
-        // 判斷光線是否踩到了物體後面 (這裡假設 Z 是負值，越遠 Z 越小)
-        float depthDiff = (scenePos.z - rayPos.z);
-        if (depthDiff >= Depth_Hit_Bias && depthDiff < Thickness) {
-            vec3 hitNormal = get_view_space_normal(rayUV);
+        if (rayGoThroughDistance>= Min_Penetration_Depth  &&  rayGoThroughDistance< Thickness) {
             
-            if (dot(hitNormal, rayDir) > 0.0) {
-                    continue;//自己畫圖，p點跟取樣點的normal夾角最小就是90度，不可能更小，也就是dot必定要<=0。>0直接濾掉
-                }
+            
+            //if (dot(Q_Normal, rayDir) > 0.0) {
+            //        continue;//自己畫圖，p點跟q點的normal夾角最小就是90度，不可能更小，也就是dot必定要<=0。>0直接濾掉
+             //  }
 
             hit = true;
 
-            float hitDistance = distance(P, scenePos);
-            ssptFadeout = circle_fade_out(hitDistance, maxDistance);
+            float hitDistance = distance(P, sceneToViewSpacePos);
+            ssptFadeoutRatio = circle_fade_out(hitDistance, maxSsptDistance);
             
             hitColor = texture(COLOR_MAIN, rayUV).rgb;
-            isEmission = texture(COLOR_EMISSION, rayUV).r;
+            emissionBrightness = texture(COLOR_EMISSION, rayUV).r;
             break;
         }
     }
 
 
-    // 9.Color Bleeding
+    // 8.Color Bleeding
     vec4 color = texture(COLOR_MAIN, v_texcoord);
-    vec3 finalColor = color.rgb * Ambient_Strength * isEmission ; // aoFactor;* isEmission
-
+    vec3 finalColor = color.rgb * Ambient_Strength * emissionBrightness ; // aoFactor;
     if (hit) {
 
-        float NdotL = max(0.0, dot(N, rayDir));
+        float NdotL = max(0.0, dot(P_Normal, rayDir));
 
         // 漫反射表面吸收率 (Albedo Bounce Factor)
         // 非發光體牆面反射光線時會吸收大部分能量，一般設定在 0.2 ~ 0.4，防止能量爆炸
         float bounceAlbedo = 0.3;
-        vec3 hitRadiance = hitColor * isEmission;
+        vec3 hitRadiance = hitColor * emissionBrightness;
         // 將 NdotL 乘進間接光累積中
-        vec3 bounceLight = hitRadiance * ssptFadeout * NdotL * bounceAlbedo * Indirect_Light_Strengh * 1;
+        vec3 bounceLight = hitRadiance * ssptFadeoutRatio * NdotL * bounceAlbedo * Indirect_Light_Strengh * 1;
         
         finalColor += bounceLight;
     }
