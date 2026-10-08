@@ -1,14 +1,14 @@
 #version 330 compatibility
 #include "Define_Engine.glsl"
 
-
+in vec4 mc_Entity;
 
 
 out vec2 v_texcoord;
 out vec4 v_color;
 out vec3 v_view_normal;
 
-
+flat out int v_block_id;//flat=不要interpolation
 
 
 
@@ -19,5 +19,6 @@ void main() {
     v_view_normal = normalize(gl_NormalMatrix * a_normal);
     // 3. 計算 View Space (視角空間) 法線
     
+    v_block_id = int(mc_Entity.x + 0.5);
     gl_Position = ftransform();    // 4. 將 3D 頂點投影至 2D 螢幕 (標準幾何變換)
 }

@@ -8,7 +8,7 @@
 #define COLOR_VELOCITY colortex5
 #define COLOR_VOXEL colortex6
 #define COLOR_RAYTRACE colortex7
-#define COLOR_AUX0 colortex8
+#define COLOR_EMISSION colortex8
 #define COLOR_AUX1 colortex9
 #define COLOR_AUX2 colortex10
 #define COLOR_AUX3 colortex11
