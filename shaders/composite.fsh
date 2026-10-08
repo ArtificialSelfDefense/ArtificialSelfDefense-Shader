@@ -225,12 +225,11 @@ void main() {
             vec3 hitNormal = get_view_space_normal(rayUV);
             
             if (dot(hitNormal, rayDir) > 0.0) {
-                    break;//自己畫圖，p點跟取樣點的normal夾角最小就是90度，不可能更小，也就是dot必定要<=0。>0直接濾掉
+                    continue;//自己畫圖，p點跟取樣點的normal夾角最小就是90度，不可能更小，也就是dot必定要<=0。>0直接濾掉
                 }
 
             hit = true;
 
-            // --- 核心新增：計算 3D 距離並帶入衰減 ---
             float hitDistance = distance(P, scenePos);
             ssptFadeout = circle_fade_out(hitDistance, maxDistance);
             
@@ -243,12 +242,10 @@ void main() {
 
     // 9.Color Bleeding
     vec4 color = texture(COLOR_MAIN, v_texcoord);
-    vec3 finalColor = color.rgb * Ambient_Strength * 1; // aoFactor;
+    vec3 finalColor = color.rgb * Ambient_Strength * isEmission ; // aoFactor;* isEmission
 
     if (hit) {
-        // --- 核心新增：計算餘弦衰減 N dot L ---
-        // rayDir 是從 P 點發射出去的方向，N 是 P 點的法線
-        // dot(N, rayDir) 即為 cos(theta)，角度越傾斜（接近 90 度），強度越接近 0
+
         float NdotL = max(0.0, dot(N, rayDir));
 
         // 漫反射表面吸收率 (Albedo Bounce Factor)
