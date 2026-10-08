@@ -19,10 +19,12 @@
 
 #define Ray_Max_Step 64 // [8 10 20 30 40 50 60 64 70 80 90 100 200]
 #define Ray_Step_Size 0.10 // [0.02 0.05 0.10 0.15 0.20 0.30 0.50]
-#define Avoid_Fuck_Bright_Value 1.7 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
+#define Avoid_Fuck_Bright_Value 0 // [0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
 #define Indirect_Light_Strengh 1.0 //[0.2 0.4 0.6 0.8 1.0 1.2 1.4 1.6 1.8 2.0]
-#define Ambient_Strength 0.05 // [0.00 0.02 0.05 0.10 0.15 0.20] 
-#define Bias 0.05 // [0 0.05 0.1 0.15 0.2 0.25 0.3 0.35] 
+#define Ambient_Strength 0.05 // [0.00 0.02 0.05 0.10 0.15 0.20 0.5 1] 
+#define Depth_Hit_Bias 0.005 // [0 0.005 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5]
+#define Thickness 0.1 // [0 0.02 0.04 0.06 0.08 0.1 0.15 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define Ray_Start_Bias 0.02 // [0 0.02 0.04 0.06 0.08 0.1 0.15 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 
 
 
@@ -142,7 +144,7 @@ void main() {
     // 1. 定義 P 點與 N 法線
     vec3 P = get_view_space_position(v_texcoord);
     vec3 N = get_view_space_normal(v_texcoord);
-    vec3 rayStart = P + N * Bias; // 為避免自己插自己，把起始位置做個微小偏移
+    vec3 rayStart = P + N * Ray_Start_Bias; // 為避免自己插自己，把起始位置做個微小偏移
 
 
     // 2. 過濾天空：如果是天空，直接刷成紅色
@@ -161,11 +163,10 @@ void main() {
 
     bool hit = false;
     vec3 hitColor = vec3(0.0);
-    float thickness = 0.5;
     
 
     // 5.定義最大sspt範圍，用來算光線衰減
-    float maxDistance = 10;//float(Ray_Max_Step) * Ray_Step_Size;
+    float maxDistance = float(Ray_Max_Step) * Ray_Step_Size;
     float ssptFadeout;                       // 用來存這條光線的衰減強度
 
 
@@ -217,10 +218,16 @@ void main() {
 
         // 深度比對：在 View Space 中，Z 軸通常為負值 (或者離相機越遠 Z 越大/小)
         // 判斷光線是否踩到了物體後面 (這裡假設 Z 是負值，越遠 Z 越小)
-        float depthDiff = scenePos.z - rayPos.z;
-        if (depthDiff >= Bias && depthDiff < thickness) {
-            hit = true;
+        float depthDiff = (scenePos.z - rayPos.z);
+        if (depthDiff >= Depth_Hit_Bias && depthDiff < Thickness) {
+            vec3 hitNormal = get_view_space_normal(rayUV);
             
+            if (dot(hitNormal, rayDir) > 0.0) {
+                    break;//自己畫圖，p點跟取樣點的normal夾角最小就是90度，不可能更小，也就是dot必定要<=0。>0直接濾掉
+                }
+
+            hit = true;
+
             // --- 核心新增：計算 3D 距離並帶入衰減 ---
             float hitDistance = distance(P, scenePos);
             ssptFadeout = circle_fade_out(hitDistance, maxDistance);
