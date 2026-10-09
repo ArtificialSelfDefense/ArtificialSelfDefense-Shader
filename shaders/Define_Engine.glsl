@@ -10,6 +10,12 @@
 
 邏輯:先有一個方塊的單面局部座標gl_MultiTexCoord0 (0,0)~(1.1)> 乘以縮放&平移矩陣gl_TextureMatrix[0]>去大圖gtexture找東西貼上去  註:光照同上
 */
+/*
+gl_Normal是model space的normal(vec3)，乘以gl_NormalMatrix後得到view space的座標
+gl_Vertex還沒用過我不知道
+gl_Color是vec4，包含生態域顏色與簡易ao
+*/
+
 
 #define texure_face_uv  gl_MultiTexCoord0
 #define light_face_uv   gl_MultiTexCoord1

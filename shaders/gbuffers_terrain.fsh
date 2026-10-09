@@ -5,7 +5,7 @@
 
 in vec2 v_texture_atlas_coordinate;
 in vec4 v_biome_and_simpleAO_color;
-in vec3 v_view_normal;
+in vec3 v_viewspace_block_normal;
 
 flat in int v_block_id;
 
@@ -35,7 +35,7 @@ void main() {
 
 
     // 2. 歸一化 View Space 法線，並將 [-1.0, 1.0] 的方向向量映射至 [0.0, 1.0] RGBA 顏色空間
-    vec3 normalizedNormal = normalize(v_view_normal);//vsh雖然已經normalize過了，但是interpolate之後長度會有微小變化，再normalize一次才不會炸
+    vec3 normalizedNormal = normalize(v_viewspace_block_normal);//vsh雖然已經normalize過了，但是interpolate之後長度會有微小變化，再normalize一次才不會炸
     vec4 encodedNormal = vec4(normalizedNormal * 0.5 + 0.5, 1.0);//colortex只能存0~1(rgba限制)，所以要處理一下
 
     // 3. 正式將資料寫入對應的 G-Buffer 貼圖
