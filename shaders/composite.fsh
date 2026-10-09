@@ -242,7 +242,7 @@ void main() {
     o_color = vec4(finalColor, 1.0); //最終輸出
     //o_color = vec4(vec3(aoFactor), 1.0); //AO測試
 #else
-    o_color = texture(COLOR_MAIN, v_texcoord);
+    o_color = texture(COLOR_MAIN, v_texcoord) * Ambient_Strength;
 #endif   
 }
 
