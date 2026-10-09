@@ -14,7 +14,7 @@
 
 /*
 gl_Normal是model space的normal(vec3)，乘以gl_NormalMatrix後得到view space的向量
-gl_Vertex是mod是model space的頂點(vec3)，乘以gl_ModelViewMatrix得到view space的座標
+gl_Vertex是model space的頂點(vec3)，乘以gl_ModelViewMatrix得到view space的座標
 gl_Color是vec4，包含生態域顏色與簡易ao
 */
 

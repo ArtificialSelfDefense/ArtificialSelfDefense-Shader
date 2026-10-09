@@ -1,4 +1,4 @@
-#version 330 compatibility
+#version 430 compatibility
 #include "Define_ColorTex.glsl"
 #include "Define_Engine.glsl"
 
@@ -13,6 +13,8 @@ flat in int v_block_id;
 
 
 uniform sampler2D texture_atlas;
+uniform usampler3D voxelSampler;
+uniform vec3 cameraPosition;
 
 /*
   DRAWBUFFERS解釋:
@@ -34,6 +36,35 @@ void main() {
     if (v_block_id == 10000) {
         isEmissionBlock = 1.0;
     }
+
+    #define VOXEL_AREA 128
+    #define VOXEL_RADIUS (VOXEL_AREA / 2)
+    
+    // 計算當前像素在 3D 體素網格中的座標位置
+    ivec3 voxel_pos = ivec3(v_viewspace_block_position.xyz + fract(cameraPosition) + VOXEL_RADIUS);
+    
+    if (clamp(voxel_pos, 0, VOXEL_AREA) == voxel_pos) {
+        // 從 3D 貼圖讀取 32 位元整數，並解包還原成原本的顏色
+        vec4 bytes = unpackUnorm4x8(texture3D(voxelSampler, vec3(voxel_pos) / vec3(VOXEL_AREA)).r);
+        if (bytes.a > 0.0) {
+            albedo.rgb = bytes.rgb; // 將方塊的色彩替換為從 3D 體素倉庫讀出的顏色
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     //歸一化 View Space 法線，並將 [-1.0, 1.0] 的方向向量映射至 [0.0, 1.0] RGBA 顏色空間
