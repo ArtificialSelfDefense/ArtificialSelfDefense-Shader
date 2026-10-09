@@ -28,6 +28,8 @@
 #define Ray_Start_Bias 0.02 // [0 0.02 0.04 0.06 0.08 0.1 0.15 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 #define Indirect_Light_Reflection_Rate 0.5 //[0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 
+#define Sspt
+
 
 
 #include "Define_ColorTex.glsl"
@@ -140,6 +142,7 @@ float circle_fade_out(float radiusFromLight, float maxSsptDistance) {
 
 
 void main() {
+#ifdef Sspt
     // 1. 定義 P 點、N 法線與 Q 點(Q是撞擊到的像素點)
     vec3 P = get_view_space_position(v_texcoord);
     vec3 P_Normal = get_view_space_normal(v_texcoord);
@@ -238,9 +241,11 @@ void main() {
 
     o_color = vec4(finalColor, 1.0); //最終輸出
     //o_color = vec4(vec3(aoFactor), 1.0); //AO測試
-    
-    
-    
+#else
+    o_color = texture(COLOR_MAIN, v_texcoord);
+#endif   
+}
+
     /* 驗證測試：如果撞到物體，輸出綠色；沒撞到輸出黑色
     if (hit) {
         o_color = vec4(0.0, 1.0, 0.0, 1.0); // 綠色代表撞擊成功
@@ -296,8 +301,3 @@ void main() {
     
     o_color=color;
     */
-
-    
-    
-
-}
