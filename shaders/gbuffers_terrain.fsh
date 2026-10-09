@@ -4,7 +4,7 @@
 
 
 in vec2 v_texture_atlas_coordinate;
-in vec4 v_biome_color;
+in vec4 v_biome_and_simpleAO_color;
 in vec3 v_view_normal;
 
 flat in int v_block_id;
@@ -22,7 +22,7 @@ uniform sampler2D texture_atlas;
 /* DRAWBUFFERS:018 */
 
 void main() {
-    vec4 albedo = texture(texture_atlas, v_texture_atlas_coordinate) * v_biome_color;
+    vec4 albedo = texture(texture_atlas, v_texture_atlas_coordinate) * v_biome_and_simpleAO_color;
     if (albedo.a < 0.1) {
         discard;
     }
