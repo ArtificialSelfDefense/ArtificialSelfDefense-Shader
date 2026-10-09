@@ -8,7 +8,7 @@
 #include "Define_Engine.glsl"
 
 
-in vec2 v_texcoord;
+in vec2 v_texture_atlas_coordinate;
 
 
 uniform sampler2D COLOR_MAIN;
@@ -22,7 +22,7 @@ uniform float viewWidth;
 uniform float viewHeight;
 
 /* DRAWBUFFERS:0 */ 
-out vec4 o_color;// 指定輸出到 colortex0 (COLOR_MAIN)
+out vec4 output_pixel_color;// 指定輸出到 colortex0 (COLOR_MAIN)
 
 
 
@@ -39,13 +39,13 @@ void main() {
 
     vec2 texelSize = 1.0 / vec2(viewWidth, viewHeight); // 單一像素大小
     
-    vec4 centerColor = texture(COLOR_MAIN, v_texcoord);
-    vec3 centerNormal = texture(COLOR_NORMAL, v_texcoord).rgb * 2.0 - 1.0;
-    float centerDepth = get_linear_depth(v_texcoord);
+    vec4 centerColor = texture(COLOR_MAIN, v_texture_atlas_coordinate);
+    vec3 centerNormal = texture(COLOR_NORMAL, v_texture_atlas_coordinate).rgb * 2.0 - 1.0;
+    float centerDepth = get_linear_depth(v_texture_atlas_coordinate);
 
     // 如果是天空或深度太遠，直接不降噪跳過
-    if (texture(DEPTH_OPAQUE, v_texcoord).r >= 1.0) {
-        o_color = centerColor;
+    if (texture(DEPTH_OPAQUE, v_texture_atlas_coordinate).r >= 1.0) {
+        output_pixel_color = centerColor;
         return;
     }
 
@@ -56,7 +56,7 @@ void main() {
     for (int x = -2; x <= 2; x++) {
         for (int y = -2; y <= 2; y++) {
             vec2 offset = vec2(float(x), float(y)) * texelSize;
-            vec2 sampleUV = v_texcoord + offset;
+            vec2 sampleUV = v_texture_atlas_coordinate + offset;
 
             // 1. 採樣鄰近像素資訊
             vec4 sampleColor = texture(COLOR_MAIN, sampleUV);
@@ -79,12 +79,12 @@ void main() {
             totalWeight += weight;
         }
     }
-    o_color = totalWeight > 0.0 ? (accumulatedColor / totalWeight) : centerColor;
+    output_pixel_color = totalWeight > 0.0 ? (accumulatedColor / totalWeight) : centerColor;
 
 
 
 
 #else
-    o_color = texture(COLOR_MAIN, v_texcoord);
+    output_pixel_color = texture(COLOR_MAIN, v_texture_atlas_coordinate);
 #endif
 }

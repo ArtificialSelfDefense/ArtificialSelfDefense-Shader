@@ -13,24 +13,12 @@
 
 
 
-/*
-以下為core的程式&註解，目前無用，僅為保存紀錄
 
-in vec3 vaPosition;
-in vec2 vaUV0;
-
-第1個分為va和position，全稱"Vertex Attribute Position"，即"頂點屬性：位置"。 畢竟是定義成"畫布"，就像圖層一樣，必須要有先後，以及"GLSL硬體規範"，所以要有z(vec3)
-第2個類似，va同上，UV0=Texture Coordinates，目的是為了normalized螢幕的長寬從(0,0)~(1,1)，避免群魔亂舞的1920*1080、2560*1440等等。本質為標準化，不需要那麼麻煩所以vec2就好了
-*/
-
-
-
-out vec2 v_texcoord;
+out vec2 v_texture_atlas_coordinate;
 //out代表要給rasterization(gpu)並最終傳給fsh的
-//texcoord=texture coordinate
 
 void main() {
-    v_texcoord = a_uv.xy;
+    v_texture_atlas_coordinate = (texure_face_uv_to_atlass_matrix * texure_face_uv).xy;
     //a_uv(gl_MultiTexCoord0): (iris傳進來的)螢幕4維原始UV座標，vec4(u, v, s, t)
     //.xy: 矩陣是vec4，只需要2維UV，只取xy
 

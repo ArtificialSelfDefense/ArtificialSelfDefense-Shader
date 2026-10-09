@@ -13,6 +13,8 @@
 2.clamp(x,minValue,maxValue)。 clamp(車速,最小車速,最大車速)代表不管怎麼跑範圍都在最大跟最小中間，超過壓成最大，太小就拉到最小
 3.fract()=去整數只留小數
 4.abs()是絕對值(absolute value)
+5.uniform，為iris傳進來的全域唯讀變數
+6.sampler2D，讀2D貼圖
 */
 
 
@@ -37,7 +39,7 @@
 #include "Define_Engine.glsl"
 
 
-in vec2 v_texcoord;
+in vec2 v_texture_atlas_coordinate;
 
 
 uniform sampler2D COLOR_MAIN;
@@ -51,13 +53,10 @@ uniform mat4 gbufferProjection;
 
 uniform float viewWidth;
 uniform float viewHeight;
-//uniform為iris傳進來的全域唯讀變數，本身就包含in的意思、mat4為4*4矩陣
-//sampler2D告訴 GPU 這是一張 2D 貼圖，叫硬體採樣器準備隨時去這張貼圖裡拿顏色
-//目前有三個2D貼圖，COLOR_MAIN(colortex0),COLOR_NORMAL(colortex1),DEPTH_OPAQUE(depthtex0)
 
 
 
-out vec4 o_color;
+out vec4 output_pixel_color;
 
 
 
@@ -144,20 +143,20 @@ float circle_fade_out(float radiusFromLight, float maxSsptDistance) {
 void main() {
 #ifdef Sspt
     // 1. 定義 P 點、N 法線與 Q 點(Q是撞擊到的像素點)
-    vec3 P = get_view_space_position(v_texcoord);
-    vec3 P_Normal = get_view_space_normal(v_texcoord);
+    vec3 P = get_view_space_position(v_texture_atlas_coordinate);
+    vec3 P_Normal = get_view_space_normal(v_texture_atlas_coordinate);
 
 
     // 2. 天空(depth>1)刷成紅色
-    float depth = texture(DEPTH_OPAQUE, v_texcoord).r;
+    float depth = texture(DEPTH_OPAQUE, v_texture_atlas_coordinate).r;
     if (depth >= 1.0) {
-        o_color = vec4(1.0, 0.0, 0.0, 1.0);
+        output_pixel_color = vec4(1.0, 0.0, 0.0, 1.0);
         return;
     }
 
 
     // 3. 隨機半球方向向量
-    vec3 rayDir = sample_half_sphere(P_Normal, v_texcoord);
+    vec3 rayDir = sample_half_sphere(P_Normal, v_texture_atlas_coordinate);
 
     
     // 4. 定義Raymarching係數(不能調數值的or必須寫死的)
@@ -167,7 +166,7 @@ void main() {
     float maxSsptDistance = float(Ray_Max_Step)* Ray_Step_Size;
     float ssptFadeoutRatio;
     float contribution;
-    vec3 finalColor = texture(COLOR_MAIN,v_texcoord).rgb* Ambient_Strength;//還沒加上間接光的顏色
+    vec3 finalColorWithSspt = texture(COLOR_MAIN,v_texture_atlas_coordinate).rgb* Ambient_Strength;//還沒加上間接光的顏色
     
 
 
@@ -180,7 +179,7 @@ void main() {
 
     // 6.SSAO
     for (int i = 0; i < ssaoSamples; i++) {
-        vec2 sampleUVOffset = v_texcoord + vec2(float(i) * 0.0517, float(i) * 0.1319);
+        vec2 sampleUVOffset = v_texture_atlas_coordinate + vec2(float(i) * 0.0517, float(i) * 0.1319);
         vec3 ssaoDir = sample_half_sphere(P_Normal, sampleUVOffset);
         
         float scale = float(i + 1) / float(ssaoSamples);
@@ -235,51 +234,41 @@ void main() {
     if (hit) {
         contribution = clamp(dot(P_Normal, rayDir),0.0,1.0);//理論上dot在0-1，為了保險，加上限下限
 
-        vec3 bounceLight = pureHitColor* (Indirect_Light_Strengh* ssptFadeoutRatio* contribution* Indirect_Light_Reflection_Rate );//間接光可以分為: 1.間接光強度 2.跟光源的距離算出來的衰減 3.光源的貢獻程度 4.漫反射反射率(之後需要重做，因為每個方塊的漫反射反射率應該是不同的)
-        finalColor += bounceLight;
+        vec3 bounceLight = pureHitColor* (Indirect_Light_Strengh* ssptFadeoutRatio* contribution* Indirect_Light_Reflection_Rate);//間接光可以分為: 1.間接光強度 2.跟光源的距離算出來的衰減 3.光源的貢獻程度 4.漫反射反射率(之後需要重做，因為每個方塊的漫反射反射率應該是不同的)
+        finalColorWithSspt += bounceLight;
     }
 
-    o_color = vec4(finalColor, 1.0); //最終輸出
-    //o_color = vec4(vec3(aoFactor), 1.0); //AO測試
+    output_pixel_color = vec4(finalColorWithSspt, 1.0); //最終輸出
+    //output_pixel_color = vec4(vec3(aoFactor), 1.0); //AO測試
 #else
-    o_color = texture(COLOR_MAIN, v_texcoord) * Ambient_Strength;
+    output_pixel_color = texture(COLOR_MAIN, v_texture_atlas_coordinate) * Ambient_Strength;
 #endif   
 }
 
     /* 驗證測試：如果撞到物體，輸出綠色；沒撞到輸出黑色
     if (hit) {
-        o_color = vec4(0.0, 1.0, 0.0, 1.0); // 綠色代表撞擊成功
+        output_pixel_color = vec4(0.0, 1.0, 0.0, 1.0); // 綠色代表撞擊成功
     } else {
-        o_color = vec4(0.0, 0.0, 0.0, 1.0); // 黑色代表未撞擊
+        output_pixel_color = vec4(0.0, 0.0, 0.0, 1.0); // 黑色代表未撞擊
     }
     */
     
 
     /*
-    純顏色無shadow:
-    vec4 color = texture(COLOR_MAIN, v_texcoord);
-    o_color=color;
-    
-    */
-    
-    
-
-          
-    /*
     測試depth:
-    vec4 color = texture(COLOR_MAIN, v_texcoord);
+    vec4 color = texture(COLOR_MAIN, v_texture_atlas_coordinate);
 
 
-    vec3 viewPos = get_view_space_position(v_texcoord);//函式，自己看
-    vec3 viewNormal = get_view_space_normal(v_texcoord);//同上
+    vec3 viewPos = get_view_space_position(v_texture_atlas_coordinate);//函式，自己看
+    vec3 viewNormal = get_view_space_normal(v_texture_atlas_coordinate);//同上
     
     
-    float depth = texture(DEPTH_OPAQUE, v_texcoord).r;
+    float depth = texture(DEPTH_OPAQUE, v_texture_atlas_coordinate).r;
     float dist = length(viewPos) / 64.0;
     color.rgb = vec3(dist);
     
     
-    o_color=color;
+    output_pixel_color=color;
     
     */
     
@@ -289,15 +278,15 @@ void main() {
 
     /*
     測試normal:
-    vec4 color = texture(COLOR_MAIN, v_texcoord);
+    vec4 color = texture(COLOR_MAIN, v_texture_atlas_coordinate);
 
 
-    vec3 viewPos = get_view_space_position(v_texcoord);//函式，自己看
-    vec3 viewNormal = get_view_space_normal(v_texcoord);//同上    
+    vec3 viewPos = get_view_space_position(v_texture_atlas_coordinate);//函式，自己看
+    vec3 viewNormal = get_view_space_normal(v_texture_atlas_coordinate);//同上    
 
     
     color.rgb = viewNormal * 0.5 + 0.5;
     
     
-    o_color=color;
+    output_pixel_color=color;
     */

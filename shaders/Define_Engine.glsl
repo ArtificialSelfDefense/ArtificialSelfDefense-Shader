@@ -1,26 +1,21 @@
-// Iris / OpenGL 原始資料插座包裝層 (Input Abstraction Layer)
+/*
+1.gl_MultiTexCoord0是一個vec4(xyzw,因為齊次座標要vec4所以後面是用湊的，y=0，z=1)，取他的xy來代表每個方塊的單面座標(0,0)~(1.1)
+2.gl_TextureMatrix[0]是一個4*4的矩陣，僅包含xy的縮放和平移。每個方塊的該矩陣內的數字都不同
+3.gtexture(atlas)=整坨世界的方塊紋理合併成的一張貼圖
+
+4.gl_MultiTexCoord1    =光照版本的同一件事情
+5.gl_TextureMatrix[1]  =光照版本的同一件事情
+6.lightmap             =光照版本的同一件事情
 
 
-// 1.  Vertex Attributes - 僅vsh (a開頭代表attributes)
-#define a_position   gl_Vertex
-#define a_normal     gl_Normal
-#define a_color      gl_Color
-#define a_uv         gl_MultiTexCoord0
-#define a_lightmap   gl_MultiTexCoord1
+邏輯:先有一個方塊的單面局部座標gl_MultiTexCoord0 (0,0)~(1.1)> 乘以縮放&平移矩陣gl_TextureMatrix[0]>去大圖gtexture找東西貼上去  註:光照同上
+*/
 
-// 2. Matrices - vsh/fsh通用 (u開頭代表uniform)
-//#define u_modelview  gl_ModelViewMatrix
-//#define u_proj       gl_ProjectionMatrix
-//#define u_normalmat  gl_NormalMatrix
+#define texure_face_uv  gl_MultiTexCoord0
+#define light_face_uv   gl_MultiTexCoord1
 
-// 3. Texture Matrices - vsh/fsh通用
-#define u_texmat     gl_TextureMatrix[0] // 方塊主貼圖矩陣。 composite裡是4x4單位矩陣，[0]跟c語言的陣列一樣，代表"第一個"，所以在這就是"第一個texure matrix"
-#define u_lightmat   gl_TextureMatrix[1] // 光照圖 (Lightmap) 矩陣
+#define texure_face_uv_to_atlass_matrix         gl_TextureMatrix[0]
+#define light_face_uv_to_lightmap_matrix  gl_TextureMatrix[1]
 
-// 4. Engine Uniform Matrices (Iris 內建逆矩陣等)
-//#define u_inv_proj   gbufferProjectionInverse
-//#define u_proj   gbufferProjection
-
-// 5. Samplers (貼圖取樣器)
-#define u_texture    gtexture
+#define texture_atlas    gtexture
 

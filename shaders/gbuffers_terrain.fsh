@@ -3,14 +3,14 @@
 #include "Define_Engine.glsl"
 
 
-in vec2 v_texcoord;
-in vec4 v_color;
+in vec2 v_texture_atlas_coordinate;
+in vec4 v_biome_color;
 in vec3 v_view_normal;
 
 flat in int v_block_id;
 
 
-uniform sampler2D u_texture;
+uniform sampler2D texture_atlas;
 
 /*
   DRAWBUFFERS解釋:
@@ -22,10 +22,7 @@ uniform sampler2D u_texture;
 /* DRAWBUFFERS:018 */
 
 void main() {
-    //1. 採樣方塊主貼圖，並乘上生物群系調色 (草地/樹葉染色)
-    vec4 albedo = texture(gtexture, v_texcoord) * v_color;
-
-    // 如果 alpha 太低 (例如半透明/透明剪裁區)，直接丟棄該像素不繪製
+    vec4 albedo = texture(texture_atlas, v_texture_atlas_coordinate) * v_biome_color;
     if (albedo.a < 0.1) {
         discard;
     }
