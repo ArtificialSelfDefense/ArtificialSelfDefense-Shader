@@ -13,8 +13,30 @@ flat in int v_block_id;
 
 
 uniform sampler2D texture_atlas;
-uniform usampler3D voxelSampler;
+
+
+//新的
 uniform vec3 cameraPosition;
+uniform sampler2D lightmap;
+
+//shadows
+uniform sampler2D shadowcolor0;
+uniform sampler2D shadowtex0;
+uniform sampler2D shadowtex1;
+
+//our 3d image with voxel data
+uniform usampler3D cSampler1;
+
+//data we sent from vertex shader
+in vec2 lmcoord;
+in vec2 texcoord;
+in vec4 glcolor;
+in vec3 block_centered_relative_pos;
+
+in vec3 foot_pos2;
+in vec3 normals_face_world;
+
+//新的
 
 /*
   DRAWBUFFERS解釋:
