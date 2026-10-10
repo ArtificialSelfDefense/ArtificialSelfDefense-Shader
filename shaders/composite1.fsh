@@ -48,8 +48,8 @@ uniform sampler2D DEPTH_OPAQUE;
 uniform sampler2D COLOR_EMISSION;
 uniform sampler2D blue_noise_tex;
 
-uniform mat4 cameraProjectionInverse;
-uniform mat4 cameraProjection;
+uniform mat4 cameraProjeTransMatrInverse;
+uniform mat4 cameraProjeTransMatr;
 
 uniform float viewWidth;
 uniform float viewHeight;
@@ -68,7 +68,7 @@ out vec4 output_pixel_color;
 vec3 get_view_space_position(vec2 uv) {
     float depth = texture(DEPTH_OPAQUE, uv).r;//深度圖的rgb都一樣所以隨便取，約定成俗取r
     vec3 ndcPos = vec3(uv, depth)*2-1;//因為NDC規定畫面中心要是(0,0)，所以把uv的depth補回來之後，要整個"乘2減1"，讓uv的數學座標都正確
-    vec4 clipPos = cameraProjectionInverse * vec4(ndcPos, 1.0);//clip在projection乘完後還是4維的，補上 w=1.0 方便進行 4x4 矩陣運算，然後乘以"反projection矩陣"得到clip space
+    vec4 clipPos = cameraProjeTransMatrInverse * vec4(ndcPos, 1.0);//clip在projection乘完後還是4維的，補上 w=1.0 方便進行 4x4 矩陣運算，然後乘以"反projection矩陣"得到clip space
     return clipPos.xyz / clipPos.w;//透視除法(除以 w 抵銷透視縮放)
 }
 
@@ -81,7 +81,7 @@ vec3 get_view_space_normal(vec2 uv) {
 
 
 vec2 view_space_to_uv(vec3 viewPos, mat4 projMat) {
-    vec4 clipPos = cameraProjection * vec4(viewPos, 1.0);
+    vec4 clipPos = cameraProjeTransMatr * vec4(viewPos, 1.0);
     vec3 ndc = clipPos.xyz / clipPos.w; 
     return ndc.xy * 0.5 + 0.5;
 }
@@ -187,7 +187,7 @@ void main() {
         
         vec3 samplePos = P + ssaoDir * (ssaoRadius * scale);
         
-        vec2 sampleUV = view_space_to_uv(samplePos, cameraProjection);
+        vec2 sampleUV = view_space_to_uv(samplePos, cameraProjeTransMatr);
         vec3 sceneToViewSpacePos = get_view_space_position(sampleUV);
         
         float rayGoThroughDistance = sceneToViewSpacePos.z - samplePos.z;
@@ -205,7 +205,7 @@ void main() {
     // 7.Raymarching
     for (int i = 1; i <= Ray_Max_Step; i++) {
         vec3 rayPos = rayStart  +  (float(i)* Ray_Step_Size)* rayDir;
-        vec2 rayUV = view_space_to_uv(rayPos, cameraProjection);
+        vec2 rayUV = view_space_to_uv(rayPos, cameraProjeTransMatr);
         vec3 sceneToViewSpacePos = get_view_space_position(rayUV);
         
         float rayGoThroughDistance = rayPos.z  -  sceneToViewSpacePos.z;//對比兩個同樣uv座標的深度，即:1.光線當下的深度 2.螢幕上對應物體的深度，如果光線的深度比較深代表撞到東西了

@@ -17,8 +17,8 @@ uniform sampler2D texture_atlas;
 uniform float frameTimeCounter;
 
 uniform vec3 cameraPosition;
-uniform mat4 cameraModelView;
-uniform mat4 cameraModelViewInverse;
+uniform mat4 cameraViewTransMatr;
+uniform mat4 cameraViewTransMatrInverse;
 
 
 out vec2 v_texture_atlas_coordinate;
