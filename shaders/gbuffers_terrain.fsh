@@ -1,4 +1,4 @@
-#version 330 compatibility
+#version 430 compatibility
 #include "/Define/Define_ColorTex.glsl"
 #include "/Define/Define_Engine.glsl"
 const float ambientOcclusionLevel = 0.0;//他媽的狗屎vanillaAO終於給老子關掉了，一定他媽的要放在.fsh不然不會生效
