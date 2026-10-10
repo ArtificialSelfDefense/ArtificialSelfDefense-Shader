@@ -14,7 +14,7 @@
 
 /*
 gl_Normal是model space的normal(vec3)，乘以gl_NormalMatrix後得到view space的向量
-gl_Vertex是mod是model space的頂點(vec3)，乘以gl_ModelViewMatrix得到view space的座標
+gl_Vertex是model space的頂點(vec3)，乘以gl_ModelViewMatrix得到view space的座標
 gl_Color是vec4，包含生態域顏色與簡易ao
 */
 
@@ -26,4 +26,18 @@ gl_Color是vec4，包含生態域顏色與簡易ao
 #define light_face_uv_to_lightmap_matrix  gl_TextureMatrix[1]
 
 #define texture_atlas    gtexture
+
+
+#define sunModelView shadowModelView
+#define sunModelViewInverse shadowModelViewInverse
+#define sunProjection shadowProjection
+#define sunProjectionInverse shadowProjectionInverse
+
+#define cameraModelView gbufferModelView
+#define cameraModelViewInverse gbufferModelViewInverse
+#define cameraProjection gbufferProjection
+#define cameraProjectionInverse gbufferProjectionInverse
+
+#define block_vertex_to_middle_vec_and_light_level at_midBlock
+#define blockid mc_Entity
 
