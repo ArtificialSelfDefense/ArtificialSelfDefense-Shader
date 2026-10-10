@@ -1,7 +1,8 @@
 #version 330 compatibility
 #include "/Define/Define_Engine.glsl"
 
-in vec4 mc_Entity;
+
+in vec4 blockid;
 
 
 out vec2 v_texture_atlas_coordinate;
@@ -26,6 +27,6 @@ void main() {
     v_viewspace_block_position = gl_ModelViewMatrix * gl_Vertex;
 
     
-    v_block_id = int(mc_Entity.x + 0.5);
+    v_block_id = int(blockid.x + 0.5);
     gl_Position = ftransform();
 }

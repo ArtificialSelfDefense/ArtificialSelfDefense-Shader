@@ -1,6 +1,7 @@
 #version 330 compatibility
 #include "/Define/Define_ColorTex.glsl"
 #include "/Define/Define_Engine.glsl"
+const float ambientOcclusionLevel = 0.0;//他媽的狗屎vanillaAO終於給老子關掉了，一定他媽的要放在.fsh不然不會生效
 
 in vec2 v_texture_atlas_coordinate;
 in vec2 v_lightmap_coordinate;
@@ -24,9 +25,9 @@ uniform sampler2D texture_atlas;
 /* DRAWBUFFERS:0184 */
 
 void main() {
-    vec4 albedo = texture(texture_atlas, v_texture_atlas_coordinate) * v_biome_and_simpleAO_color;
+    vec4 albedo = texture(texture_atlas, v_texture_atlas_coordinate)* v_biome_and_simpleAO_color;
     if (albedo.a < 0.1) {
-        discard;
+       discard;
     }
 
 
