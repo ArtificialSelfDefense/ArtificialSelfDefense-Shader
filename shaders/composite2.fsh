@@ -3,9 +3,9 @@
 
 //#define Bilateral_Denoise
 
-#include "Define_ColorTex.glsl"
-#include "Define_DepthTex.glsl"
-#include "Define_Engine.glsl"
+#include "/Define/Define_ColorTex.glsl"
+#include "/Define/Define_DepthTex.glsl"
+#include "/Define/Define_Engine.glsl"
 
 
 in vec2 v_texture_atlas_coordinate;

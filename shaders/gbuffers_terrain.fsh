@@ -1,6 +1,6 @@
 #version 330 compatibility
-#include "Define_ColorTex.glsl"
-#include "Define_Engine.glsl"
+#include "/Define/Define_ColorTex.glsl"
+#include "/Define/Define_Engine.glsl"
 
 in vec2 v_texture_atlas_coordinate;
 in vec2 v_lightmap_coordinate;
