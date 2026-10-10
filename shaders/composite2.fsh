@@ -15,9 +15,6 @@ uniform sampler2D COLOR_MAIN;
 uniform sampler2D COLOR_NORMAL;
 uniform sampler2D DEPTH_OPAQUE;
 
-uniform mat4 gbufferProjectionInverse;
-uniform mat4 gbufferProjection;
-
 uniform float viewWidth;
 uniform float viewHeight;
 
