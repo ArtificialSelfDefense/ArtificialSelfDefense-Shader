@@ -15,7 +15,7 @@ uniform sampler2D texture_atlas;
 uniform vec3 cameraPosition;
 uniform float frameTimeCounter;
 
-uniform mat4 cameraProjectionInverse;
+uniform mat4 cameraProjeTransMatrInverse;
 
 
 
