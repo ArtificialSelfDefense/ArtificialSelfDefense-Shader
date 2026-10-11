@@ -1,23 +1,12 @@
 #version 430 compatibility
-#include "/Define/Define_ColorTex.glsl"
-#include "/Define/Define_Engine.glsl"
+
+#define BeforeVoidMainVsh
+#ifdef BeforeVoidMainVsh
+#include "/libs/BeforeVoidMainFsh.glsl"
+#endif
+
 const float ambientOcclusionLevel = 0.0;//他媽的狗屎vanillaAO終於給老子關掉了，一定他媽的要放在.fsh不然不會生效
 
-in vec2 v_texture_atlas_coordinate;
-in vec2 v_lightmap_coordinate;
-
-in vec4 v_biome_and_simpleAO_color;
-
-in vec3 v_viewspace_block_normal;
-
-in vec3 v_playerspace_block_vertex;
-in vec3 v_playerspace_block_normal;
-in vec3 v_playerspace_block_center_position;
-
-flat in int v_block_id;
-
-
-uniform sampler2D texture_atlas;
 
 /*
   DRAWBUFFERS解釋:
@@ -27,6 +16,7 @@ uniform sampler2D texture_atlas;
   ....以此類推(詳細去找Define_ColorTex.glsl)
 */
 /* DRAWBUFFERS:0184 */
+
 
 void main() {
     vec4 albedo = texture(texture_atlas, v_texture_atlas_coordinate)* v_biome_and_simpleAO_color;

@@ -1,22 +1,3 @@
-/*
-做體素必要的in/out/uniform/layout:
-
-
-layout (r32ui) uniform uimage3D voxelImage;
-
-uniform vec3 cameraPosition;
-
-in vec4 blockid;
-in vec4 block_vertex_to_middle_vec_and_light_level;
-
-out vec3 v_playerspace_block_vertex;
-out vec3 v_playerspace_block_center_position;
-
-一定還有缺，反正紅色再補
-
-*/
-
-
     #define Voxel_Area 128 //[32 64 128]
     #define Voxel_Radius (Voxel_Area/2)
     #define Visual_Data 0 //[0 1 2 3 4]
