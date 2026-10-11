@@ -28,10 +28,10 @@ gl_Color是vec4，包含生態域顏色與簡易ao
 #define texture_atlas    gtexture
 
 
-#define sunModelViewMatr shadowModelView
-#define sunModelViewInverseMatr shadowModelViewInverse
-#define sunProjectionMatr shadowProjection
-#define sunProjectionInverseMatr shadowProjectionInverse
+#define sunModelViewTransMatr shadowModelView
+#define sunModelViewTransMatrInverse shadowModelViewInverse
+#define sunProjeTransMatr shadowProjection
+#define sunProjeTransMatrInverse shadowProjectionInverse
 
 #define cameraViewTransMatr gbufferModelView
 #define cameraViewTransMatrInverse gbufferModelViewInverse
