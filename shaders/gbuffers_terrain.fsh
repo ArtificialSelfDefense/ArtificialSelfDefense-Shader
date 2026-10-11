@@ -7,8 +7,12 @@ in vec2 v_texture_atlas_coordinate;
 in vec2 v_lightmap_coordinate;
 
 in vec4 v_biome_and_simpleAO_color;
+
 in vec3 v_viewspace_block_normal;
-in vec4 v_viewspace_block_position;
+
+in vec3 v_playerspace_block_vertex;
+in vec3 v_playerspace_block_normal;
+in vec3 v_playerspace_block_center_position;
 
 flat in int v_block_id;
 

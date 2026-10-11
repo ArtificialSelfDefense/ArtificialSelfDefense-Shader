@@ -3,9 +3,9 @@
 
 #define Voxel_Area 128 //[32 64 128]
 #define Voxel_Radius (Voxel_Area/2)
+#define Visual_Data 0 //[0 1 2 3 4]
 
-
-layout (r32ui) uniform uimage3D storeVoxelImage;
+layout (r32ui) uniform uimage3D voxelImage;
 
 
 in vec4 blockid;
@@ -27,12 +27,10 @@ out vec2 v_lightmap_coordinate;
 out vec4 v_biome_and_simpleAO_color;
 
 out vec3 v_viewspace_block_normal;
-out vec4 v_viewspace_block_position;
 
-out vec3 v_modelspace_block_vertex;
-out vec3 v_modelspace_block_normal;
-
-out vec3 block_centered_relative_pos;//?
+out vec3 v_playerspace_block_vertex;
+out vec3 v_playerspace_block_normal;
+out vec3 v_playerspace_block_center_position;
 
 flat out int v_block_id;//flat=不要interpolation
 
@@ -45,42 +43,60 @@ void main() {
     
     v_biome_and_simpleAO_color = gl_Color;
 
-    vec3 temp1 = normalize(gl_NormalMatrix * gl_Normal);
-    v_viewspace_block_normal = temp1;
+    vec4 viewspace_block_vertex = gl_ModelViewMatrix* gl_Vertex;
+    v_playerspace_block_vertex =  (cameraViewTransMatrInverse* viewspace_block_vertex).xyz;
+    
+    v_viewspace_block_normal = normalize(gl_NormalMatrix * gl_Normal);
+    v_playerspace_block_normal = (cameraViewTransMatrInverse* vec4(v_viewspace_block_normal,1.0)).xyz;
 
-    v_viewspace_block_position = gl_ModelViewMatrix * gl_Vertex;
+    v_playerspace_block_center_position = v_playerspace_block_vertex + block_vertex_to_middle_vec_and_light_level.xyz + fract(cameraPosition);//把前進而造成數值變小的playerspace的方塊中心座標小數部分，跟前進而造成數值變大的fract(cameraPosition)抵銷
 
-	vec3 temp2 = gl_Vertex.xyz;
-	v_modelspace_block_vertex=temp2;
-
-    v_modelspace_block_normal=normalize(gl_Normal);
 
     v_block_id = int(blockid.x + 0.5);
 
 
 //體素
+    ivec3 voxel_coordinate = ivec3(v_playerspace_block_center_position + Voxel_Radius);//體素的正中間就是"體素半徑一半"，所以針對playerspace的所有方塊中心，直接加體素半徑就可以對齊
+
+
+		if(mod(gl_VertexID,4)==0  &&  clamp(voxel_coordinate,0,Voxel_Area) == voxel_coordinate)	{
+
+			#if VISUALIZED_DATA == 0
+				//visualize color average
+				vec4 voxel_data =	vec4(textureLod(texture_atlas, v_texture_atlas_coordinate,log2(float(textureSize(texture_atlas, 0).x))).rgb* v_biome_and_simpleAO_color.rgb,1.);
+			#endif
+			#if VISUALIZED_DATA == 1
+				//visualize position
+				vec4 voxel_data = vec4(fract((block_centered_relative_pos.xyz+floor(cameraPosition))*.05),1.);
+			#endif
+			#if VISUALIZED_DATA == 2
+				//visualize color of one pixel
+				vec4 voxel_data =	vec4(textureLod(texture_atlas, v_texture_atlas_coordinate,0).rgb* v_biome_and_simpleAO_color.rgb,1.);
+			#endif
+			#if VISUALIZED_DATA == 3
+				//light value
+				vec4 voxel_data =	vec4(at_midBlock.w);
+			#endif
+			#if VISUALIZED_DATA == 4
+				//certain block by id
+				vec4 voxel_data =	mc_Entity.x == 10000.? vec4(0.,1.,0.,1.) : mc_Entity.x == 10001.? vec4(0.5,0.5,0.,1.) : vec4(0.2);
+			#endif
+			
+			//visialize player position
+			if(frameTimeCounter < 1. && distance(vec3(voxel_coordinate),vec3(Voxel_Radius))< 3.)
+			{
+				voxel_data = vec4(0.,0.,1.,1.);
+			}
 
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+		uint integerValue = packUnorm4x8(voxel_data);
+				
+		imageAtomicMax(voxelImage, voxel_coordinate, integerValue);
+        }
 //體素
 
 
