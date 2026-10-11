@@ -12,11 +12,7 @@ uniform sampler2D SHADOW_OPAQUE;
 
 
 /* DRAWBUFFERS:01846 */
-layout(location = 0) out vec4 output_albedo;//COLOR_MAIN
-layout(location = 1) out vec4 output_encodedNormal;//COLOR_NORMAL
-layout(location = 8) out vec4 output_emissionMap;//COLOR_EMISSION
-layout(location = 4) out vec4 output_lightmap;//COLOR_LIGHTMAP
-layout(location = 6) out vec4 output_voxelcolor;//COLOR_VOXEL
+
 /*
   DRAWBUFFERS解釋:
   這裡的字串順序代表 gl_FragData[N] 寫入的實體 colortex 編號：
@@ -24,6 +20,16 @@ layout(location = 6) out vec4 output_voxelcolor;//COLOR_VOXEL
   - gl_FragData[1] -> 寫入 1 (colortex1 / COLOR_NORMAL)
   ....以此類推(詳細去找Define_ColorTex.glsl)
 */
+
+
+
+vec4 output_albedo;
+vec4 output_encodedNormal;
+vec4 output_emissionMap;
+vec4 output_lightmap;
+vec4 output_voxelcolor;
+
+
 
 
 
@@ -110,11 +116,18 @@ if( clamp(voxel_coordinate,0,Voxel_Area) == voxel_coordinate )
     if (v_block_id == 10000) {
         isEmissionBlock = 1.0;
     }
-    
     output_emissionMap = vec4(vec3(isEmissionBlock), 1.0);
     //COLOR_EMISSION
 
     output_lightmap = vec4(vec2(v_lightmap_coordinate),0.0,1.0);
     //COLOR_LIGHTMAP
+
+
+
+	gl_FragData[0] = output_albedo;        // 寫入 COLOR_MAIN (colortex0)
+    gl_FragData[1] = output_encodedNormal; // 寫入 COLOR_NORMAL (colortex1)
+    gl_FragData[2] = output_emissionMap; //剩下自己看
+    gl_FragData[3] = output_lightmap;
+	gl_FragData[4] = output_voxelcolor;
 
 }
