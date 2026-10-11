@@ -1,7 +1,7 @@
 #version 430 compatibility
 
-#define BeforeVoidMainVsh
-#ifdef BeforeVoidMainVsh
+#define BeforeVoidMainFsh
+#ifdef BeforeVoidMainFsh
 #include "/libs/BeforeVoidMainFsh.glsl"
 #endif
 

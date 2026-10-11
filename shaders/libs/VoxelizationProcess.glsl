@@ -16,7 +16,7 @@
 			#endif
 			#if Visual_Data == 4
 				//certain block by id
-				vec4 voxel_data =	blockid.x == 10000.? vec4(0.,1.,0.,1.) : blockid.x == 10001.? vec4(0.5,0.5,0.,1.) : vec4(0.2);
+				vec4 voxel_data =	blockid.x == 20000.? vec4(0.,1.,0.,1.) : blockid.x == 200001.? vec4(0.5,0.5,0.,1.) : vec4(0.2);
 			#endif
 			
 			//visialize player position

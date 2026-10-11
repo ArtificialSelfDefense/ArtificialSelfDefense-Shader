@@ -7,15 +7,15 @@
 
 
 #version 330 compatibility
-#include "/Define/Define_Engine.glsl"
+#define BeforeVoidMainVsh
+#ifdef BeforeVoidMainVsh
+#include "/libs/BeforeVoidMainVsh.glsl"
+#endif
 //版本，330後的寫法我比較喜歡所以這麼用。core代表不向下相容、compatibility代表可以向下相容。根據document，我選compatibility以保證穩定
 //在 compatibility 下，composite 階段使用傳統 gl_ 屬性綁定最穩妥，Patcher 能 100% 完美轉譯
 
 
 
-
-out vec2 v_texture_atlas_coordinate;
-//out代表要給rasterization(gpu)並最終傳給fsh的
 
 void main() {
     v_texture_atlas_coordinate = (texure_face_uv_to_atlass_matrix * texure_face_uv).xy;

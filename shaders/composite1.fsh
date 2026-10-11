@@ -34,12 +34,10 @@
 
 
 
-#include "/Define/Define_ColorTex.glsl"
-#include "/Define/Define_DepthTex.glsl"
-#include "/Define/Define_Engine.glsl"
-
-
-in vec2 v_texture_atlas_coordinate;
+#define BeforeVoidMainFsh
+#ifdef BeforeVoidMainFsh
+#include "/libs/BeforeVoidMainFsh.glsl"
+#endif
 
 
 uniform sampler2D COLOR_MAIN;
@@ -48,8 +46,6 @@ uniform sampler2D DEPTH_OPAQUE;
 uniform sampler2D COLOR_EMISSION;
 uniform sampler2D blue_noise_tex;
 
-uniform mat4 cameraProjeTransMatrInverse;
-uniform mat4 cameraProjeTransMatr;
 
 uniform float viewWidth;
 uniform float viewHeight;
@@ -81,7 +77,7 @@ vec3 get_view_space_normal(vec2 uv) {
 
 
 vec2 view_space_to_uv(vec3 viewPos, mat4 projMat) {
-    vec4 clipPos = cameraProjeTransMatr * vec4(viewPos, 1.0);
+    vec4 clipPos = projMat * vec4(viewPos, 1.0);
     vec3 ndc = clipPos.xyz / clipPos.w; 
     return ndc.xy * 0.5 + 0.5;
 }
