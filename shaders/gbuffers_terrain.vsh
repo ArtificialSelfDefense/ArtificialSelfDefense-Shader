@@ -51,7 +51,7 @@ void main() {
 			#endif
 			#if Visual_Data == 1
 				//visualize position
-				vec4 voxel_data = vec4(fract((block_centered_relative_pos.xyz+floor(cameraPosition))*.05),1.);
+				vec4 voxel_data = vec4(fract((v_playerspace_block_center_position.xyz+floor(cameraPosition))*.05),1.);
 			#endif
 			#if Visual_Data == 2
 				//visualize color of one pixel
@@ -59,11 +59,11 @@ void main() {
 			#endif
 			#if Visual_Data == 3
 				//light value
-				vec4 voxel_data =	vec4(at_midBlock.w);
+				vec4 voxel_data =	vec4(block_vertex_to_middle_vec_and_light_level.w);
 			#endif
 			#if Visual_Data == 4
 				//certain block by id
-				vec4 voxel_data =	blockid.x == 10000.? vec4(0.,1.,0.,1.) : blockid.x == 10001.? vec4(0.5,0.5,0.,1.) : vec4(0.2);
+				vec4 voxel_data =	blockid.x == 20000.? vec4(0.,1.,0.,1.) : blockid.x == 20001.? vec4(0.5,0.5,0.,1.) : vec4(0.2);
 			#endif
 			
 			//visialize player position
