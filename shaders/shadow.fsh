@@ -6,10 +6,9 @@
 #endif
 
 out vec4 output_color;
-uniform sampler2D colortex6;
 
 void main() {
-	vec4 color = texture(colortex6, v_texture_atlas_coordinate) * v_biome_and_simpleAO_color;
+	vec4 color = texture(texture_atlas, v_texture_atlas_coordinate) * v_biome_and_simpleAO_color;
 
 	output_color=color;
 }
