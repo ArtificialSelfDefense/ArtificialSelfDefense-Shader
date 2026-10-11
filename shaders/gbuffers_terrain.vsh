@@ -70,6 +70,8 @@ void main() {
 
 
 
+#define WHERE_TO_VOXELIZE 2 //[1 2]
+#if WHERE_TO_VOXELIZE == 1
 
 		if(mod(gl_VertexID,4)==0  &&  clamp(voxel_coordinate,0,Voxel_Area) == voxel_coordinate)	{
 
@@ -101,16 +103,11 @@ void main() {
 			}
 
 
-
-
-
-
 		uint integerValue = packUnorm4x8(voxel_data);
-				
 		imageAtomicMax(voxelImage, voxel_coordinate, integerValue);
         }
 
-
+#endif
 
 
 

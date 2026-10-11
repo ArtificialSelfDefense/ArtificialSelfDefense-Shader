@@ -2,7 +2,6 @@
 #include "/Define/Define_ColorTex.glsl"
 #include "/Define/Define_Engine.glsl"
 
-// 宣告你需要用到的紋理
 
 uniform sampler2D COLOR_VOXEL;
 
