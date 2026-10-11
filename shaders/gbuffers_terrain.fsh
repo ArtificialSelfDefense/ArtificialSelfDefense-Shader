@@ -54,7 +54,7 @@ void main() {
 	}
 	
 	// to show voxel range
-	voxel_color.g = 1.; 
+	voxel_color.b = 1.; 
 	
 	//get voxel map position
 	#define Voxel_Area 128 //[32 64 128]
@@ -64,7 +64,7 @@ void main() {
 	#define VOXEL_POSITION_RECONSTRUCTION_METHOD 2 //[1 2]
 	#if VOXEL_POSITION_RECONSTRUCTION_METHOD == 1
 		//passed from vertex shader
-		ivec3 voxel_coordinate = ivec3(block_centered_relative_pos+Voxel_Radius);
+		ivec3 voxel_coordinate = ivec3(v_playerspace_block_center_position+Voxel_Radius);
 	#endif
 	#if VOXEL_POSITION_RECONSTRUCTION_METHOD == 2
 		//reconstructed using foot position & face normals
@@ -109,8 +109,8 @@ void main() {
 		
 		//just making the shadow pass run
 		//you don't have to do this if using the 'shadows.enabled' flag in shader.properties
-		vec3 shadow = texture(SHADOW_OPAQUE, v_texture_atlas_coordinate*100.).rgb;
-		if(v_texture_atlas_coordinate.x < .01 && v_texture_atlas_coordinate.y < .01) voxel_color.rgb  = shadow;
+		//vec3 shadow = texture(SHADOW_OPAQUE, v_texture_atlas_coordinate*100.).rgb;
+		//if(v_texture_atlas_coordinate.x < .01 && v_texture_atlas_coordinate.y < .01) voxel_color.rgb  = shadow;
 		
 		//visualize world position represented in voxel map
 		#define DEBUG_ALIGHNMENT 0 //[0 1]

@@ -19,7 +19,7 @@ void main() {
 
     #define Voxel_Area 128 //[32 64 128]
     #define Voxel_Radius (Voxel_Area/2)
-    #define Visual_Data 0 //[0 1 2 3 4]
+
     
     v_playerspace_block_center_position = v_playerspace_block_vertex + block_vertex_to_middle_vec_and_light_level.xyz + fract(cameraPosition);//把前進而造成數值變小的playerspace的方塊中心座標小數部分，跟前進而造成數值變大的fract(cameraPosition)抵銷
     ivec3 voxel_coordinate = ivec3(v_playerspace_block_center_position + Voxel_Radius);//體素的正中間就是"體素半徑一半"，所以針對playerspace的所有方塊中心，直接加體素半徑就可以對齊
@@ -27,8 +27,8 @@ void main() {
 
 
 
-		if(mod(gl_VertexID,4)==0  &&  clamp(voxel_coordinate,0,Voxel_Area) == voxel_coordinate)	{
-
+		if(mod(gl_VertexID,4)==0  &&  clamp(voxel_coordinate,0,Voxel_Area)==voxel_coordinate)	{
+			#define Visual_Data 0 //[0 1 2 3 4]
 			#if Visual_Data == 0
 				//visualize color average
 				vec4 voxel_data =	vec4(textureLod(texture_atlas, v_texture_atlas_coordinate,log2(float(textureSize(texture_atlas, 0).x))).rgb* v_biome_and_simpleAO_color.rgb,1.);
@@ -76,11 +76,6 @@ void main() {
 
 
 
-
-
-
-
-	
 
 	gl_Position = ftransform();
 }
