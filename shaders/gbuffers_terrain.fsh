@@ -61,12 +61,12 @@ void main() {
 	#define Voxel_Radius (Voxel_Area/2)
 
 	//get which voxel this is in 2 ways
-	#define voxel_coordinateITION_RECONSTRUCTION_METHOD 2 //[1 2]
-	#if voxel_coordinateITION_RECONSTRUCTION_METHOD == 1
+	#define VOXEL_POSITION_RECONSTRUCTION_METHOD 2 //[1 2]
+	#if VOXEL_POSITION_RECONSTRUCTION_METHOD == 1
 		//passed from vertex shader
 		ivec3 voxel_coordinate = ivec3(block_centered_relative_pos+Voxel_Radius);
 	#endif
-	#if voxel_coordinateITION_RECONSTRUCTION_METHOD == 2
+	#if VOXEL_POSITION_RECONSTRUCTION_METHOD == 2
 		//reconstructed using foot position & face normals
 		ivec3 voxel_coordinate = ivec3(v_playerspace_block_vertex-v_playerspace_block_normal*.1+fract(cameraPosition)+Voxel_Radius);
 	#endif
@@ -78,8 +78,8 @@ void main() {
 		vec4 bytes = unpackUnorm4x8(texture3D(voxelSampler, vec3(voxel_coordinate)/vec3(Voxel_Area)).r);	
 		voxel_color.rgb = bytes.rgb;
 		
-		#define VISUALIZED_DATA 0 //[0 1 2 3 4]
-		#if VISUALIZED_DATA == 4
+		#define Visual_Data 0 //[0 1 2 3 4]
+		#if Visual_Data == 4
 			//handle a block differently based on type of block, and checking it's neighbors
 			//thick grass
 			bool grass = bytes.g > .7;
@@ -104,7 +104,7 @@ void main() {
 				thick_grass = thick_grass && (bytes.g > .7 || bytes.g < .1);
 					
 			}
-			color.rgb = thick_grass? vec3(0.,1.,0.) : grass? vec3(1.,0.,0.) : vec3(.2);
+			voxel_color.rgb = thick_grass? vec3(0.,1.,0.) : grass? vec3(1.,0.,0.) : vec3(.2);
 		#endif
 		
 		//just making the shadow pass run
@@ -115,7 +115,7 @@ void main() {
 		//visualize world position represented in voxel map
 		#define DEBUG_ALIGHNMENT 0 //[0 1]
 		#if DEBUG_ALIGHNMENT == 1
-			color.rgb  = fract(vec3(voxel_coordinate 
+			voxel_color.rgb  = fract(vec3(voxel_coordinate 
 			+ floor(cameraPosition)
 			)/5.);
 		#endif
