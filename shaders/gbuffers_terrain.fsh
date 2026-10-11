@@ -39,4 +39,5 @@ void main() {
     gl_FragData[1] = encodedNormal; // 寫入 COLOR_NORMAL (colortex1)
     gl_FragData[2] = vec4(vec3(isEmissionBlock), 1.0); //剩下自己看
     gl_FragData[3] = vec4(vec2(v_lightmap_coordinate),0.0,1.0);
+	
 }
