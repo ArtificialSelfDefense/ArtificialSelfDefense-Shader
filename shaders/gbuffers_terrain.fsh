@@ -19,7 +19,7 @@ vec4 voxel_color;
   - gl_FragData[1] -> 寫入 1 (colortex1 / COLOR_NORMAL)
   ....以此類推(詳細去找Define_ColorTex.glsl)
 */
-/* DRAWBUFFERS:0184 */
+/* DRAWBUFFERS:01846 */
 
 
 void main() {
@@ -54,7 +54,7 @@ void main() {
 	}
 	
 	// to show voxel range
-	voxel_color.r = 1.; 
+	voxel_color.g = 1.; 
 	
 	//get voxel map position
 	#define Voxel_Area 128 //[32 64 128]
