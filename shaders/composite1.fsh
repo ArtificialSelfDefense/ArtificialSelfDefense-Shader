@@ -206,7 +206,6 @@ void main() {
     }
 
     output_pixel_color = vec4(finalColorWithSspt, 1.0); //最終輸出
-    //output_pixel_color = vec4(vec3(aoFactor), 1.0); //AO測試
 #else
     output_pixel_color = texture(COLOR_MAIN, v_texture_atlas_coordinate) * Ambient_Strength;
 #endif   
