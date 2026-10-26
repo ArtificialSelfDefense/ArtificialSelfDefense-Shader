@@ -46,7 +46,9 @@ uniform sampler2D COLOR_MAIN;
 uniform sampler2D COLOR_NORMAL;
 uniform sampler2D DEPTH_OPAQUE;
 uniform sampler2D COLOR_EMISSION;
+uniform sampler2D COLOR_LIGHTMAP;
 uniform sampler2D blue_noise_tex;
+uniform sampler2D lightmap;
 
 uniform mat4 cameraProjeTransMatrInverse;
 uniform mat4 cameraProjeTransMatr;
@@ -167,6 +169,9 @@ void main() {
     float ssptFadeoutRatio;
     float contribution;
     vec3 finalColorWithSspt = texture(COLOR_MAIN,v_texture_atlas_coordinate).rgb* Ambient_Strength;//還沒加上間接光的顏色
+    vec2 blocklightAndSkylight = texture(COLOR_LIGHTMAP, v_texture_atlas_coordinate).rg;
+    float blockLight = blocklightAndSkylight.x;
+    float skyLight = blocklightAndSkylight.y;
     
 
     // 5.Raymarching
@@ -191,7 +196,7 @@ void main() {
             float radiusFromLight = distance(P, sceneToViewSpacePos);
             ssptFadeoutRatio = circle_fade_out(radiusFromLight, maxSsptDistance);
             
-            pureHitColor = texture(COLOR_MAIN, rayUV).rgb * texture(COLOR_EMISSION, rayUV).r;;//判斷發光與否
+            pureHitColor = texture(COLOR_EMISSION, rayUV).rgb* blockLight* skyLight;//判斷發光與否
             break;
         }
     }

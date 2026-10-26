@@ -69,10 +69,14 @@ void main() {
     }
 
 
-    float isEmissionBlock = 0.0;
+    vec3 emissionBlockLightColor;
     if (v_block_id == 10000) {
-        isEmissionBlock = 1.0;
+        emissionBlockLightColor = vec3(1.0, 0.5, 0.15);
     }
+    else if (v_block_id == 10001) {
+        emissionBlockLightColor = vec3(0.1, 0.6, 1.0);
+    }
+    else emissionBlockLightColor = vec3(0.0);
 
 
     vec3 normalizedNormal = normalize(v_viewspace_block_normal);//vsh雖然已經normalize過了，但是interpolate之後長度會有微小變化，再normalize一次才不會炸
@@ -90,7 +94,7 @@ void main() {
 
     gl_FragData[0] = albedo;
     gl_FragData[1] = encodedNormal;
-    gl_FragData[2] = vec4(vec3(isEmissionBlock), 1.0); //
+    gl_FragData[2] = vec4(vec3(emissionBlockLightColor), 1.0); //
     gl_FragData[3] = vec4(vec2(v_lightmap_coordinate),0.0,1.0);
 	gl_FragData[4] = voxel_color;
 }
