@@ -169,40 +169,7 @@ void main() {
     vec3 finalColorWithSspt = texture(COLOR_MAIN,v_texture_atlas_coordinate).rgb* Ambient_Strength;//還沒加上間接光的顏色
     
 
-
-/*
-    // 5.定義SSAO係數
-    float ssaoOcclusion = 0.0;
-    int ssaoSamples = 8;
-    float ssaoRadius = 0.4;
-
-
-    // 6.SSAO
-    for (int i = 0; i < ssaoSamples; i++) {
-        vec2 sampleUVOffset = v_texture_atlas_coordinate + vec2(float(i) * 0.0517, float(i) * 0.1319);
-        vec3 ssaoDir = sample_half_sphere(P_Normal, sampleUVOffset);
-        
-        float scale = float(i + 1) / float(ssaoSamples);
-        scale = scale * scale; 
-        
-        vec3 samplePos = P + ssaoDir * (ssaoRadius * scale);
-        
-        vec2 sampleUV = view_space_to_uv(samplePos, cameraProjeTransMatr);
-        vec3 sceneToViewSpacePos = get_view_space_position(sampleUV);
-        
-        float rayGoThroughDistance = sceneToViewSpacePos.z - samplePos.z;
-        if (rayGoThroughDistance > 0.01 && rayGoThroughDistance < ssaoRadius) {
-            float dist = distance(P, sceneToViewSpacePos);
-            float rangeCheck = smoothstep(ssaoRadius, 0.0, dist);
-            ssaoOcclusion += 1.0 * rangeCheck;
-        }
-    }
-
-    float aoFactor = clamp(1.0 - (ssaoOcclusion / float(ssaoSamples)), 0.0, 1.0);
-    aoFactor = pow(aoFactor, 2.0);*/ 
-
-
-    // 7.Raymarching
+    // 5.Raymarching
     for (int i = 1; i <= Ray_Max_Step; i++) {
         vec3 rayPos = rayStart  +  (float(i)* Ray_Step_Size)* rayDir;
         vec2 rayUV = view_space_to_uv(rayPos, cameraProjeTransMatr);
@@ -230,7 +197,7 @@ void main() {
     }
 
 
-    // 8.Color Bleeding
+    // 6.Color Bleeding
     if (hit) {
         contribution = clamp(dot(P_Normal, rayDir),0.0,1.0);//理論上dot在0-1，為了保險，加上限下限
 
