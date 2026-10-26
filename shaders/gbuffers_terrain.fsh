@@ -46,6 +46,18 @@ vec4 voxel_color;
   - gl_FragData[0] = 某東西1，這代表把"某東西1" 寫入 colortex9 
   - gl_FragData[1] = 某東西2，這代表把"某東西2" 寫入 colortex4
   ....以此類推
+
+對照表(Define_ColorTex.glsl):
+#define COLOR_MAIN colortex0
+#define COLOR_NORMAL colortex1
+#define COLOR_SPECULAR colortex2
+#define COLOR_PBR colortex3
+#define COLOR_LIGHTMAP colortex4
+#define COLOR_VELOCITY colortex5
+#define COLOR_VOXEL colortex6
+#define COLOR_RAYTRACE colortex7
+#define COLOR_EMISSION colortex8
+
 */
 /* DRAWBUFFERS:01846 */
 
