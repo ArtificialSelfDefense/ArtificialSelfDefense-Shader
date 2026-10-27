@@ -248,15 +248,8 @@ void main() {
             float radiusFromLight = distance(P, sceneToViewSpacePos);
             ssptFadeoutRatio = circle_fade_out(radiusFromLight, maxSsptDistance);
             
-            if (texture(COLOR_EMISSION, rayUV).r == 0) {
-                vec3 Q_Albedo = texture(COLOR_MAIN, rayUV).rgb;
-                float Q_NdotL = clamp(dot(Q_Normal, L), 0.0, 1.0);
-
-                pureHitColor = Q_Albedo * (directLightColor * Q_NdotL * skyLight);//直接光的gi
-            }
-            else {
-                pureHitColor = texture(COLOR_EMISSION, rayUV).rgb* blockLight* skyLight;//方塊光的gi
-            }
+            
+            pureHitColor = texture(COLOR_EMISSION, rayUV).rgb* blockLight* skyLight;//方塊光的gi
             break;
         }
     }
