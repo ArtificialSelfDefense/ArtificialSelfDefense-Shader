@@ -42,9 +42,9 @@
 in vec2 v_texture_atlas_coordinate;
 
 
+uniform sampler2D DEPTH_OPAQUE;
 uniform sampler2D COLOR_MAIN;
 uniform sampler2D COLOR_NORMAL;
-uniform sampler2D DEPTH_OPAQUE;
 uniform sampler2D COLOR_EMISSION;
 uniform sampler2D COLOR_LIGHTMAP;
 uniform sampler2D blue_noise_tex;
@@ -55,6 +55,10 @@ uniform mat4 cameraProjeTransMatr;
 
 uniform float viewWidth;
 uniform float viewHeight;
+
+uniform vec3 skyLightSourceVector;
+
+uniform int worldTime;
 
 
 

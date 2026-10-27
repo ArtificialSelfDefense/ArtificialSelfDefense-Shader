@@ -41,3 +41,5 @@ gl_Color是vec4，包含生態域顏色與簡易ao
 #define block_vertex_to_middle_vec_and_light_level at_midBlock
 #define blockid mc_Entity
 
+#define skyLightSourceVector shadowLightPosition
+
