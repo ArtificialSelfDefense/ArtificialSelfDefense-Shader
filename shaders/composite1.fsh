@@ -31,6 +31,7 @@
 #define Indirect_Light_Reflection_Rate 0.5 //[0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 
 #define Sspt
+#define Direct_Light
 
 
 
@@ -220,9 +221,12 @@ void main() {
     float maxSsptDistance = float(Ray_Max_Step)* Ray_Step_Size;
     float ssptFadeoutRatio;
     float contribution;
-    vec3 finalColorWithSspt = pDirectLight + (texture(COLOR_MAIN, v_texture_atlas_coordinate).rgb * Ambient_Strength);//還沒加上間接光的顏色
-    
 
+#ifdef Direct_Light
+    vec3 finalColorWithSspt = pDirectLight + (texture(COLOR_MAIN, v_texture_atlas_coordinate).rgb * Ambient_Strength);//還沒加上間接光的顏色
+#else
+    vec3 finalColorWithSspt = texture(COLOR_MAIN, v_texture_atlas_coordinate).rgb * Ambient_Strength;
+#endif
 
     
 
