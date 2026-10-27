@@ -56,7 +56,7 @@ uniform mat4 cameraProjeTransMatr;
 uniform float viewWidth;
 uniform float viewHeight;
 
-uniform vec3 skyLightSourceVector;
+uniform vec3 skyLightsourceVector;
 
 uniform int worldTime;
 
@@ -148,9 +148,15 @@ float circle_fade_out(float radiusFromLight, float maxSsptDistance) {
 
 void main() {
 #ifdef Sspt
-    // 1. 定義 P 點、N 法線與 Q 點(Q是撞擊到的像素點)
+    // 1. 定義 P 點、N 法線、直接光 L 與 Q 點(Q是撞擊到的像素點)
     vec3 P = get_view_space_position(v_texture_atlas_coordinate);
     vec3 P_Normal = get_view_space_normal(v_texture_atlas_coordinate);
+    vec3 L = normalize(skyLightsourceVector);
+    float directLightContribution = clamp(dot(P_Normal, L), 0.0, 1.0);
+    int time = worldTime % 24000;
+    vec2 blocklightAndSkylight = texture(COLOR_LIGHTMAP, v_texture_atlas_coordinate).rg;
+    float blockLight = blocklightAndSkylight.x;
+    float skyLight = blocklightAndSkylight.y;
 
 
     // 2. 天空(depth>1)刷成紅色
@@ -159,6 +165,48 @@ void main() {
         output_pixel_color = vec4(1.0, 0.0, 0.0, 1.0);
         return;
     }
+
+    //3.定義直接光顏色
+    vec3 directLightColor = vec3(0.0);
+
+    if (time >= 0 && time < 12000) {//早上到黃昏前
+        directLightColor = vec3(1.0, 0.95, 0.85) * 1.5;
+    }
+    
+    else if (time >= 12000 && time < 13800) {//黃昏
+    float t = float(time - 12000) / 1800.0;
+    
+    vec3 noonColor   = vec3(1.0, 0.95, 0.85) * 1.5;
+    vec3 sunsetColor = vec3(1.0, 0.35, 0.05) * 0.4;
+    
+    directLightColor = mix(noonColor, sunsetColor, smoothstep(0.0, 1.0, t));
+    }
+    
+    else if (time >= 13800 && time < 22200) {//晚上
+
+
+    directLightColor = vec3(0.05, 0.12, 0.25) * 0.3; 
+    }
+   
+    else {//日出
+    float t = float(time - 22200) / 1800.0;
+    
+    vec3 sunriseColor = vec3(1.0, 0.4, 0.1) * 0.5;
+    vec3 noonColor    = vec3(1.0, 0.95, 0.85) * 1.5;
+    
+    directLightColor = mix(sunriseColor, noonColor, smoothstep(0.0, 1.0, t));
+    }
+
+    vec3 pDirectLight = texture(COLOR_MAIN, v_texture_atlas_coordinate).rgb * directLightColor * directLightContribution * skyLight;
+
+
+
+
+
+
+
+
+
 
 
     // 3. 隨機半球方向向量
@@ -173,9 +221,9 @@ void main() {
     float ssptFadeoutRatio;
     float contribution;
     vec3 finalColorWithSspt = texture(COLOR_MAIN,v_texture_atlas_coordinate).rgb* Ambient_Strength;//還沒加上間接光的顏色
-    vec2 blocklightAndSkylight = texture(COLOR_LIGHTMAP, v_texture_atlas_coordinate).rg;
-    float blockLight = blocklightAndSkylight.x;
-    float skyLight = blocklightAndSkylight.y;
+    
+
+
     
 
     // 5.Raymarching
@@ -200,7 +248,15 @@ void main() {
             float radiusFromLight = distance(P, sceneToViewSpacePos);
             ssptFadeoutRatio = circle_fade_out(radiusFromLight, maxSsptDistance);
             
-            pureHitColor = texture(COLOR_EMISSION, rayUV).rgb* blockLight* skyLight;//判斷發光與否
+            if (texture(COLOR_EMISSION, rayUV).r == 0) {
+                vec3 Q_Albedo = texture(COLOR_MAIN, rayUV).rgb;
+                float Q_NdotL = clamp(dot(Q_Normal, L), 0.0, 1.0);
+
+                pureHitColor = Q_Albedo * (directLightColor * Q_NdotL * skyLight);//直接光的gi
+            }
+            else {
+                pureHitColor = texture(COLOR_EMISSION, rayUV).rgb* blockLight* skyLight;//方塊光的gi
+            }
             break;
         }
     }
