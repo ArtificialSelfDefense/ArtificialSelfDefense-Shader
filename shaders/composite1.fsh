@@ -220,7 +220,7 @@ void main() {
     float maxSsptDistance = float(Ray_Max_Step)* Ray_Step_Size;
     float ssptFadeoutRatio;
     float contribution;
-    vec3 finalColorWithSspt = texture(COLOR_MAIN,v_texture_atlas_coordinate).rgb* Ambient_Strength;//還沒加上間接光的顏色
+    vec3 finalColorWithSspt = pDirectLight + (texture(COLOR_MAIN, v_texture_atlas_coordinate).rgb * Ambient_Strength);//還沒加上間接光的顏色
     
 
 
