@@ -22,7 +22,7 @@
 
 #define Ray_Max_Step 64 // [8 10 20 30 40 50 60 64 70 80 90 100 200]
 #define Ray_Step_Size 0.1 // [0.02 0.05 0.1 0.15 0.2 0.3 0.5]
-#define Avoid_Fuck_Bright_Value 0.2 // [0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
+#define Avoid_Fuck_Bright_Value 0.1 // [0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
 #define Indirect_Light_Strengh 1.0 //[0.2 0.4 0.6 0.8 1.0 1.2 1.4 1.6 1.8 2.0]
 #define Ambient_Strength 0.1 // [0 0.02 0.05 0.1 0.15 0.2 0.5 1] 
 #define Min_Penetration_Depth 0.005 // [0 0.005 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5]
@@ -180,7 +180,7 @@ void main() {
         vec2 rayUV = view_space_to_uv(rayPos, cameraProjeTransMatr);
         vec3 sceneToViewSpacePos = get_view_space_position(rayUV);
         
-        float rayGoThroughDistance = rayPos.z  -  sceneToViewSpacePos.z;//對比兩個同樣uv座標的深度，即:1.光線當下的深度 2.螢幕上對應物體的深度，如果光線的深度比較深代表撞到東西了
+        float rayGoThroughDistance = (sceneToViewSpacePos.z - rayPos.z);//對比兩個同樣uv座標在viewspace下的z值(越遠越負，sspt的概念是光線要穿進方塊，所以要用穿進去的-方塊自己的，來得到正數)，即:1.光線的z 2.螢幕上對應物體的z
         vec3 Q_Normal = get_view_space_normal(rayUV);
         
 
