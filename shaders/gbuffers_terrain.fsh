@@ -42,9 +42,9 @@ vec4 voxel_color;
 /*
   DRAWBUFFERS解釋:
 
-  舉例，比如寫drawbuffer:9487就代表
-  - gl_FragData[0] = 某東西1，這代表把"某東西1" 寫入 colortex9 
-  - gl_FragData[1] = 某東西2，這代表把"某東西2" 寫入 colortex4
+  舉例，比如寫drawbuffer 9487就代表
+  - layout(location = 0) out vec4 某四維向量1，然後 某四維向量1 = 某東西1。這代表把"某東西1" 寫入 colortex9 
+  - layout(location = 1) out vec4 某四維向量2，然後 某四維向量2 = 某東西2。這代表把"某東西2" 寫入 colortex4
   ....以此類推
 
 對照表(Define_ColorTex.glsl):
@@ -60,6 +60,11 @@ vec4 voxel_color;
 
 */
 /* DRAWBUFFERS:01846 */
+layout(location = 0) out vec4 output_albedo;
+layout(location = 1) out vec4 output_encodedNormal;
+layout(location = 2) out vec4 output_emissionBlockLightColor;
+layout(location = 3) out vec4 output_lightmap;
+layout(location = 4) out vec4 output_voxelColor;
 
 
 void main() {
@@ -67,6 +72,12 @@ void main() {
     if (albedo.a < 0.1) {
        discard;
     }
+    output_albedo=albedo;//colortex0
+
+
+    vec3 normalizedNormal = normalize(v_viewspace_block_normal);//vsh雖然已經normalize過了，但是interpolate之後長度會有微小變化，再normalize一次才不會炸
+    vec4 encodedNormal = vec4(normalizedNormal * 0.5 + 0.5, 1.0);//colortex只能存0~1(rgba限制)，所以要處理一下
+    output_encodedNormal=encodedNormal;//colortex1
 
 
     vec3 emissionBlockLightColor;
@@ -77,24 +88,13 @@ void main() {
         emissionBlockLightColor = vec3(0.1, 0.6, 1.0);
     }
     else emissionBlockLightColor = vec3(0.0);
+    output_emissionBlockLightColor=vec4(vec3(emissionBlockLightColor), 1.0);//colortex8
 
 
-    vec3 normalizedNormal = normalize(v_viewspace_block_normal);//vsh雖然已經normalize過了，但是interpolate之後長度會有微小變化，再normalize一次才不會炸
-    vec4 encodedNormal = vec4(normalizedNormal * 0.5 + 0.5, 1.0);//colortex只能存0~1(rgba限制)，所以要處理一下
-
-
-
+    output_lightmap=vec4(vec2(v_lightmap_coordinate),0.0,1.0);//colortex4
 
 
 
 
 
-
-
-
-    gl_FragData[0] = albedo;
-    gl_FragData[1] = encodedNormal;
-    gl_FragData[2] = vec4(vec3(emissionBlockLightColor), 1.0); //
-    gl_FragData[3] = vec4(vec2(v_lightmap_coordinate),0.0,1.0);
-	gl_FragData[4] = voxel_color;
 }
