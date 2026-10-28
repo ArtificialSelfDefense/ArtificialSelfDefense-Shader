@@ -9,7 +9,7 @@ uniform sampler2D COLOR_VOXEL;
 in vec2 v_texture_atlas_coordinate;
 
 
-/* DRAWBUFFERS:0 */
+/* DRAWBUFFERS:6 */
 layout(location = 0) out vec4 output_final_color;
 //out vec4 output_final_color;
 
