@@ -98,13 +98,13 @@ void main() {
 
 
 
-	vec4 voxelColor = texture(texture_atlas, v_texture_atlas_coordinate)* v_biome_and_simpleAO_color* texture(lightmap, v_lightmap_coordinate);
-	if (voxelColor.a < 0.1) {
+	output_voxelColor = texture(texture_atlas, v_texture_atlas_coordinate)* v_biome_and_simpleAO_color* texture(lightmap, v_lightmap_coordinate);
+	if (output_voxelColor.a < 0.1) {
 		discard;
 	}
 	
 	// to show voxel range
-	voxelColor.b = 1.; 
+	output_voxelColor.b = 1.; 
 	
 	//get voxel map position
 	#define Voxel_Area 128 //[32 64 128]
@@ -126,8 +126,7 @@ void main() {
 	{
 		//get data, unpack, visualize
 		vec4 bytes = unpackUnorm4x8(texture3D(voxelSampler, vec3(voxel_coordinate)/vec3(Voxel_Area)).r);	
-		voxelColor.rgb = bytes.rgb;
-        output_voxelColor=voxelColor;
+		output_voxelColor.rgb = bytes.rgb;
         
 		#define Visual_Data 0 //[0 1 2 3 4]
 		#if Visual_Data == 4
@@ -155,8 +154,7 @@ void main() {
 				thick_grass = thick_grass && (bytes.g > .7 || bytes.g < .1);
 					
 			}
-			voxelColor.rgb = thick_grass? vec3(0.,1.,0.) : grass? vec3(1.,0.,0.) : vec3(.2);
-            output_voxelColor=voxelColor;
+			output_voxelColor.rgb = thick_grass? vec3(0.,1.,0.) : grass? vec3(1.,0.,0.) : vec3(.2);
 		#endif
 		
 		//just making the shadow pass run
@@ -167,8 +165,7 @@ void main() {
 		//visualize world position represented in voxel map
 		#define DEBUG_ALIGHNMENT 0 //[0 1]
 		#if DEBUG_ALIGHNMENT == 1
-			voxelColor.rgb  = fract(vec3(voxel_coordinate + floor(cameraPosition))/5.);
-            output_voxelColor=voxelColor;
+			output_voxelColor.rgb  = fract(vec3(voxel_coordinate + floor(cameraPosition))/5.);
 		#endif
 	}
 
