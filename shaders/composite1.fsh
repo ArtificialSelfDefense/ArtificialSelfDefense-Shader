@@ -50,7 +50,7 @@ out vec4 output_pixel_color;
 
 
 
-vec3 get_view_space_position(vec2 uv) {
+vec3 get_viewspace_position_of_uv(vec2 uv) {
     float depth = texture(DEPTH_OPAQUE, uv).r;
     vec3 ndcPos = vec3(uv, depth)*2-1;
     vec4 clipPos = cameraProjeTransMatrInverse * vec4(ndcPos, 1.0);
@@ -58,14 +58,14 @@ vec3 get_view_space_position(vec2 uv) {
 }
 
 
-vec3 get_view_space_normal(vec2 uv) {
+vec3 get_viewspace_normal_of_uv(vec2 uv) {
     vec3 normal = texture(COLOR_NORMAL, uv).xyz;
     if (length(normal) < 0.01) return vec3(0.0, 0.0, 1.0); 
     return normalize(normal * 2.0 - 1.0);
 }
 
 
-vec2 view_space_to_uv(vec3 viewPos, mat4 projMat) {
+vec2 get_uv_position_of_viewspace(vec3 viewPos, mat4 projMat) {
     vec4 clipPos = cameraProjeTransMatr * vec4(viewPos, 1.0);
     vec3 ndc = clipPos.xyz / clipPos.w; 
     return ndc.xy * 0.5 + 0.5;
@@ -88,8 +88,8 @@ vec2 view_space_to_uv(vec3 viewPos, mat4 projMat) {
 void main() {
 #ifdef Sspt
     // 1. 定義 P 點、N 法線、直接光 L 與 Q 點(Q是撞擊到的像素點)
-    vec3 P = get_view_space_position(v_texture_atlas_coordinate);
-    vec3 P_Normal = get_view_space_normal(v_texture_atlas_coordinate);
+    vec3 P = get_viewspace_position_of_uv(v_texture_atlas_coordinate);
+    vec3 P_Normal = get_viewspace_normal_of_uv(v_texture_atlas_coordinate);
     vec3 L = normalize(skyLightsourceVector);
     float directLightContribution = clamp(dot(P_Normal, L), 0.0, 1.0);
     int time = worldTime % 24000;
@@ -171,11 +171,11 @@ void main() {
     // 5.Raymarching
     for (int i = 1; i <= Ray_Max_Step; i++) {
         vec3 rayPos = rayStart  +  (float(i)* Ray_Step_Size)* rayDir;
-        vec2 rayUV = view_space_to_uv(rayPos, cameraProjeTransMatr);
-        vec3 sceneToViewSpacePos = get_view_space_position(rayUV);
+        vec2 rayUV = get_uv_position_of_viewspace(rayPos, cameraProjeTransMatr);
+        vec3 sceneToViewSpacePos = get_viewspace_position_of_uv(rayUV);
         
         float rayGoThroughDistance = (sceneToViewSpacePos.z - rayPos.z);//對比兩個同樣uv座標在viewspace下的z值(越遠越負，sspt的概念是光線要穿進方塊，所以要用穿進去的-方塊自己的，來得到正數)，即:1.光線的z 2.螢幕上對應物體的z
-        vec3 Q_Normal = get_view_space_normal(rayUV);
+        vec3 Q_Normal = get_viewspace_normal_of_uv(rayUV);
         
 
         
@@ -225,8 +225,8 @@ void main() {
     vec4 color = texture(COLOR_MAIN, v_texture_atlas_coordinate);
 
 
-    vec3 viewPos = get_view_space_position(v_texture_atlas_coordinate);//函式，自己看
-    vec3 viewNormal = get_view_space_normal(v_texture_atlas_coordinate);//同上
+    vec3 viewPos = get_viewspace_position_of_uv(v_texture_atlas_coordinate);//函式，自己看
+    vec3 viewNormal = get_viewspace_normal_of_uv(v_texture_atlas_coordinate);//同上
     
     
     float depth = texture(DEPTH_OPAQUE, v_texture_atlas_coordinate).r;
@@ -247,8 +247,8 @@ void main() {
     vec4 color = texture(COLOR_MAIN, v_texture_atlas_coordinate);
 
 
-    vec3 viewPos = get_view_space_position(v_texture_atlas_coordinate);//函式，自己看
-    vec3 viewNormal = get_view_space_normal(v_texture_atlas_coordinate);//同上    
+    vec3 viewPos = get_viewspace_position_of_uv(v_texture_atlas_coordinate);//函式，自己看
+    vec3 viewNormal = get_viewspace_normal_of_uv(v_texture_atlas_coordinate);//同上    
 
     
     color.rgb = viewNormal * 0.5 + 0.5;
