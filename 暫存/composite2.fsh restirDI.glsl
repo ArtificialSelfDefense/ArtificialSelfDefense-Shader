@@ -6,7 +6,7 @@
 #define Thickness 0.09 // [0 0.02 0.04 0.06 0.07 0.08 0.09 0.1 0.12]
 #define Ray_Start_Bias 0.02 // [0 0.02 0.04 0.06 0.08 0.1 0.15 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 
-#define Emission
+#define Emission_Direct_Light
 
 
 
@@ -91,7 +91,7 @@ vec4 get_blue_noise(vec2 texcoord) {
 
 
 void main() {
-#ifdef Emission
+#ifdef Emission_Direct_Light
     // 1. 定義 P 點、N 法線、指向太陽光向量 L
     vec3 P = get_viewspace_position_of_uv(v_texture_atlas_coordinate);
     vec3 P_Normal = get_viewspace_normal_of_uv(v_texture_atlas_coordinate);
