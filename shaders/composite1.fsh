@@ -141,7 +141,7 @@ void main() {
 
     // 4. 定義NEE係數(不能調數值的or必須寫死的)
     vec3 neeRayDir = L;
-    vec3 neeRayStartPos = P + (neeRayDir* Ray_Start_Bias); // 避免自己插自己加個偏移
+    vec3 neeRayStartPos = P + (P_Normal* Ray_Start_Bias); // 避免自己插自己加個偏移
     bool inShadow = false;
 
 
