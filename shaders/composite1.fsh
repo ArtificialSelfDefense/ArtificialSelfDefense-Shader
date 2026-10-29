@@ -25,10 +25,8 @@ uniform float viewHeight;
 uniform sampler2D DEPTH_OPAQUE;
 uniform sampler2D COLOR_MAIN;
 uniform sampler2D COLOR_NORMAL;
-uniform sampler2D COLOR_EMISSION;
-uniform sampler2D COLOR_LIGHTMAP;
+
 uniform sampler2D blue_noise_tex;
-uniform sampler2D lightmap;
 
 uniform mat4 cameraProjeTransMatrInverse;
 uniform mat4 cameraProjeTransMatr;
