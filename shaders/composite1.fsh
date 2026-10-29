@@ -39,8 +39,8 @@ uniform vec3 skyLightsourceVector;
 uniform int worldTime;
 
 
-
-out vec4 output_pixel_color;
+/* DRAWBUFFERS:0 */
+layout(location=0) out vec4 output_pixel_color;
 
 
 
