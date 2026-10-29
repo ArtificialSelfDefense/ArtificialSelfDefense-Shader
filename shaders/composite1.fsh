@@ -99,11 +99,6 @@ void main() {
     float PNormalDotL = clamp(dot(P_Normal, L), 0.0, 1.0);
     int time = worldTime % 24000;
 
-    
-    vec2 blocklightAndSkylight = texture(COLOR_LIGHTMAP, v_texture_atlas_coordinate).rg;
-    float blockLight = blocklightAndSkylight.x;
-    float skyLight = blocklightAndSkylight.y;
-
 
     // 2. 天空(depth>1)刷成紅色
     float depth = texture(DEPTH_OPAQUE, v_texture_atlas_coordinate).r;
@@ -173,6 +168,11 @@ void main() {
             break;
         }
 
+        //if (texture(DEPTH_OPAQUE, uvRayPos).r >= 1.0) {
+          //  continue; 
+        //}
+
+
 
         if (rayPenetrationDistance>= Min_Penetration_Depth  &&  rayPenetrationDistance< Thickness) {
             inShadow = true;
@@ -182,7 +182,7 @@ void main() {
         }
     }
 
-
+    //6.輸出
     output_pixel_color = vec4(pixelColor, 1.0); //最終輸出
 #else
     output_pixel_color = texture(COLOR_MAIN, v_texture_atlas_coordinate) ;
