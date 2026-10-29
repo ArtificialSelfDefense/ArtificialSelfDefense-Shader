@@ -10,8 +10,8 @@
 #define Ray_Start_Bias 0.02 // [0 0.02 0.04 0.06 0.08 0.1 0.15 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 #define Indirect_Light_Reflection_Rate 0.5 //[0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 
-#define Sspt
-#define Direct_Light
+#define Sun_Direct_Light
+
 
 
 
@@ -86,12 +86,12 @@ vec2 get_uv_position_of_viewspace(vec3 viewPos, mat4 projMat) {
 
 
 void main() {
-#ifdef Sspt
-    // 1. 定義 P 點、N 法線、直接光 L 與 Q 點(Q是撞擊到的像素點)
+#ifdef Sun_Direct_Light
+    // 1. 定義 P 點、N 法線、指向太陽光向量 L 與 Q 點(Q是撞擊到的像素點)
     vec3 P = get_viewspace_position_of_uv(v_texture_atlas_coordinate);
     vec3 P_Normal = get_viewspace_normal_of_uv(v_texture_atlas_coordinate);
     vec3 L = normalize(skyLightsourceVector);
-    float directLightContribution = clamp(dot(P_Normal, L), 0.0, 1.0);
+    float PNormalDotL = clamp(dot(P_Normal, L), 0.0, 1.0);
     int time = worldTime % 24000;
     vec2 blocklightAndSkylight = texture(COLOR_LIGHTMAP, v_texture_atlas_coordinate).rg;
     float blockLight = blocklightAndSkylight.x;
@@ -136,27 +136,16 @@ void main() {
     directLightColor = mix(sunriseColor, noonColor, smoothstep(0.0, 1.0, t));
     }
 
-    vec3 pDirectLight = texture(COLOR_MAIN, v_texture_atlas_coordinate).rgb * directLightColor * directLightContribution * skyLight;
-
-
-
-
-
-
-
-
-
 
 
     // 3. 隨機半球方向向量
-    vec3 rayDir = sample_half_sphere(P_Normal, v_texture_atlas_coordinate);
+    vec3 neeRayDir = L;
 
     
     // 4. 定義Raymarching係數(不能調數值的or必須寫死的)
-    vec3 rayStart = P + P_Normal * Ray_Start_Bias; // 避免自己插自己加個偏移
+    vec3 neeRayStartPos = P + (neeRayDir* Ray_Start_Bias); // 避免自己插自己加個偏移
     bool hit = false;
     vec3 pureHitColor;
-    float maxSsptDistance = float(Ray_Max_Step)* Ray_Step_Size;
     float ssptFadeoutRatio;
     float contribution;
 
@@ -170,7 +159,7 @@ void main() {
 
     // 5.Raymarching
     for (int i = 1; i <= Ray_Max_Step; i++) {
-        vec3 rayPos = rayStart  +  (float(i)* Ray_Step_Size)* rayDir;
+        vec3 rayPos = neeRayStartPos  +  (float(i)* Ray_Step_Size)* neeRayDir;
         vec2 rayUV = get_uv_position_of_viewspace(rayPos, cameraProjeTransMatr);
         vec3 sceneToViewSpacePos = get_viewspace_position_of_uv(rayUV);
         
@@ -199,7 +188,7 @@ void main() {
 
     // 6.Color Bleeding
     if (hit) {
-        contribution = clamp(dot(P_Normal, rayDir),0.0,1.0);//理論上dot在0-1，為了保險，加上限下限
+        contribution = clamp(dot(P_Normal, neeRayDir),0.0,1.0);//理論上dot在0-1，為了保險，加上限下限
 
         vec3 bounceLight = pureHitColor* (Indirect_Light_Strengh* ssptFadeoutRatio* contribution* Indirect_Light_Reflection_Rate);//間接光可以分為: 1.間接光強度 2.跟光源的距離算出來的衰減 3.光源的貢獻程度 4.漫反射反射率(之後需要重做，因為每個方塊的漫反射反射率應該是不同的)
         finalColorWithSspt += bounceLight;
