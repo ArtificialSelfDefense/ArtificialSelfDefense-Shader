@@ -34,8 +34,6 @@ uniform sampler2D lightmap;
 uniform mat4 cameraProjeTransMatrInverse;
 uniform mat4 cameraProjeTransMatr;
 
-uniform float viewWidth;
-uniform float viewHeight;
 
 uniform vec3 skyLightsourceVector;
 
@@ -72,46 +70,6 @@ vec2 view_space_to_uv(vec3 viewPos, mat4 projMat) {
     vec3 ndc = clipPos.xyz / clipPos.w; 
     return ndc.xy * 0.5 + 0.5;
 }
-
-
-vec4 get_blue_noise(vec2 texcoord) {
-    vec2 noiseUV = (texcoord * vec2(viewWidth, viewHeight)) / 128.0;
-    return texture(blue_noise_tex, noiseUV);
-}
-
-
-vec3 sample_half_sphere(vec3 N, vec2 uv) {
-    vec4 noise = get_blue_noise(uv);
-    float rand1 = noise.r;
-    float rand2 = noise.g;
-    
-    // 生成Hemisphere的xyz座標
-    float phi = 6.2831853 * rand1;//一圈圓形的弧度，即2*pi，取名為phi。在此取隨機
-    float cosTheta = sqrt(1.0 - rand2);//theta即光線相對於法線正上方的仰角。這邊開根號是因為要讓越直射的光貢獻越多，詳細數學不知道也不需要知道，但結果是這樣
-    float sinTheta = sqrt(rand2);
-    
-    vec3 localDir = vec3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);//根據簡單的3D幾何，可以把最後發射的光線方向的xyz座標寫成這樣
-    
-    // 把半球的暫時座標對齊法線(TBN)
-    vec3 helper = abs(N.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);//找一個向量幫忙外積。這邊找0,0,1，如果N本身就是0,0,1就會把這個向量換成1,0,0
-    vec3 tangent = normalize(cross(helper, N));//讓真正的normal跟剛剛的那個不平行向量外積，得到一個不相交的向量並變成單位向量，當作p點的切線
-    vec3 bitangent = cross(N, tangent);//把p點的切線再跟normal外積，得到第二個切線(bitangent)
-    
-    return normalize(tangent * localDir.x + bitangent * localDir.y + N * localDir.z);//線性組合，即新的xyz(tangent,bitangent,N，即TBN)的分量組合
-}
-
-
-float circle_fade_out(float radiusFromLight, float maxSsptDistance) {
-    float attenuate = 1.0/ (radiusFromLight* radiusFromLight  +  Avoid_Fuck_Bright_Value);// 即平方反比(1/d^2)，為了避免d很近整個炸亮度所以加一項。attenuate=衰減
-    return attenuate;
-}
-
-
-
-
-
-
-
 
 
 
