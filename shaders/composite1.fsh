@@ -163,7 +163,7 @@ void main() {
     // 5.Raymarching
     vec3 pixelColor = texture(COLOR_MAIN, v_texture_atlas_coordinate).rgb* directLightColor* PNormalDotL;
 
-    for (int i = 1; i <= Ray_Max_Step; i++) {
+    for (int i = 0; i <= Ray_Max_Step; i++) {
         vec3 viewspaceRayPos = neeRayStartPos  +  (((float(i)+random)* Ray_Step_Size)* neeRayDir);
         vec2 uvRayPos = get_uv_position_of_viewspace(viewspaceRayPos, cameraProjeTransMatr);
         vec3 viewspacePixelPosition = get_viewspace_position_of_uv(uvRayPos);
