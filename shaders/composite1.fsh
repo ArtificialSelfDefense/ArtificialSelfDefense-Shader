@@ -87,12 +87,13 @@ vec2 get_uv_position_of_viewspace(vec3 viewPos, mat4 projMat) {
 
 void main() {
 #ifdef Sun_Direct_Light
-    // 1. 定義 P 點、N 法線、指向太陽光向量 L 與 Q 點(Q是撞擊到的像素點)
+    // 1. 定義 P 點、N 法線、指向太陽光向量 L
     vec3 P = get_viewspace_position_of_uv(v_texture_atlas_coordinate);
     vec3 P_Normal = get_viewspace_normal_of_uv(v_texture_atlas_coordinate);
     vec3 L = normalize(skyLightsourceVector);
     float PNormalDotL = clamp(dot(P_Normal, L), 0.0, 1.0);
     int time = worldTime % 24000;
+    
     vec2 blocklightAndSkylight = texture(COLOR_LIGHTMAP, v_texture_atlas_coordinate).rg;
     float blockLight = blocklightAndSkylight.x;
     float skyLight = blocklightAndSkylight.y;
@@ -138,70 +139,50 @@ void main() {
 
 
 
-    // 3. 隨機半球方向向量
+
+
+    // 4. 定義NEE係數(不能調數值的or必須寫死的)
     vec3 neeRayDir = L;
-
-    
-    // 4. 定義Raymarching係數(不能調數值的or必須寫死的)
     vec3 neeRayStartPos = P + (neeRayDir* Ray_Start_Bias); // 避免自己插自己加個偏移
-    bool hit = false;
-    vec3 pureHitColor;
-    float ssptFadeoutRatio;
-    float contribution;
+    bool inShadow = false;
 
-#ifdef Direct_Light
-    vec3 finalColorWithSspt = pDirectLight + (texture(COLOR_MAIN, v_texture_atlas_coordinate).rgb * Ambient_Strength);//還沒加上間接光的顏色
-#else
-    vec3 finalColorWithSspt = texture(COLOR_MAIN, v_texture_atlas_coordinate).rgb * Ambient_Strength;
-#endif
+
 
     
-
+    
     // 5.Raymarching
+    vec3 pixelColor = texture(COLOR_MAIN, v_texture_atlas_coordinate).rgb + directLightColor;
+
     for (int i = 1; i <= Ray_Max_Step; i++) {
-        vec3 rayPos = neeRayStartPos  +  (float(i)* Ray_Step_Size)* neeRayDir;
-        vec2 rayUV = get_uv_position_of_viewspace(rayPos, cameraProjeTransMatr);
-        vec3 sceneToViewSpacePos = get_viewspace_position_of_uv(rayUV);
+        vec3 viewspaceRayPos = neeRayStartPos  +  ((float(i)* Ray_Step_Size)* neeRayDir);
+        vec2 uvRayPos = get_uv_position_of_viewspace(viewspaceRayPos, cameraProjeTransMatr);
+        vec3 viewspacePixelPosition = get_viewspace_position_of_uv(uvRayPos);
         
-        float rayGoThroughDistance = (sceneToViewSpacePos.z - rayPos.z);//對比兩個同樣uv座標在viewspace下的z值(越遠越負，sspt的概念是光線要穿進方塊，所以要用穿進去的-方塊自己的，來得到正數)，即:1.光線的z 2.螢幕上對應物體的z
-        vec3 Q_Normal = get_viewspace_normal_of_uv(rayUV);
-        
+        float rayPenetrationDistance = (viewspacePixelPosition.z - viewspaceRayPos.z);//對比兩個同樣uv座標在viewspace下的z值(越遠越負，sspt的概念是光線要穿進方塊，所以要用"方塊自己的(數字大) - 穿進去的(數字小)"，來得到正數)，即:1.光線的z 2.螢幕上對應物體的z
 
         
-        if (rayUV.x < 0.0 || rayUV.x > 1.0 || rayUV.y < 0.0 || rayUV.y > 1.0) {
+        if (uvRayPos.x < 0.0 || uvRayPos.x > 1.0 || uvRayPos.y < 0.0 || uvRayPos.y > 1.0) {
             break;
         }
 
-        if (rayGoThroughDistance>= Min_Penetration_Depth  &&  rayGoThroughDistance< Thickness) {
-            
-            hit = true;
 
-            float radiusFromLight = distance(P, sceneToViewSpacePos);
-            ssptFadeoutRatio = circle_fade_out(radiusFromLight, maxSsptDistance);
+        if (rayPenetrationDistance>= Min_Penetration_Depth  &&  rayPenetrationDistance< Thickness) {
+            inShadow = true;
             
-            
-            pureHitColor = texture(COLOR_EMISSION, rayUV).rgb* blockLight* skyLight;//方塊光的gi
+            pixelColor = vec3(0.0);//陰影
             break;
         }
     }
 
 
-    // 6.Color Bleeding
-    if (hit) {
-        contribution = clamp(dot(P_Normal, neeRayDir),0.0,1.0);//理論上dot在0-1，為了保險，加上限下限
-
-        vec3 bounceLight = pureHitColor* (Indirect_Light_Strengh* ssptFadeoutRatio* contribution* Indirect_Light_Reflection_Rate);//間接光可以分為: 1.間接光強度 2.跟光源的距離算出來的衰減 3.光源的貢獻程度 4.漫反射反射率(之後需要重做，因為每個方塊的漫反射反射率應該是不同的)
-        finalColorWithSspt += bounceLight;
-    }
-
-    output_pixel_color = vec4(finalColorWithSspt, 1.0); //最終輸出
+    output_pixel_color = vec4(pixelColor, 1.0); //最終輸出
 #else
     output_pixel_color = texture(COLOR_MAIN, v_texture_atlas_coordinate) * Ambient_Strength;
 #endif   
 }
 
     /* 驗證測試：如果撞到物體，輸出綠色；沒撞到輸出黑色
-    if (hit) {
+    if (inShadow) {
         output_pixel_color = vec4(0.0, 1.0, 0.0, 1.0); // 綠色代表撞擊成功
     } else {
         output_pixel_color = vec4(0.0, 0.0, 0.0, 1.0); // 黑色代表未撞擊
