@@ -21,6 +21,9 @@
 in vec2 v_texture_atlas_coordinate;
 
 
+uniform float viewWidth;
+uniform float viewHeight;
+
 uniform sampler2D DEPTH_OPAQUE;
 uniform sampler2D COLOR_MAIN;
 uniform sampler2D COLOR_NORMAL;
@@ -70,6 +73,12 @@ vec2 get_uv_position_of_viewspace(vec3 viewPos, mat4 projMat) {
 }
 
 
+vec4 get_blue_noise(vec2 texcoord) {
+    vec2 noiseUV = (texcoord * vec2(viewWidth, viewHeight)) / 128.0;
+    return texture(blue_noise_tex, noiseUV);
+}
+
+
 
 
 
@@ -91,6 +100,7 @@ void main() {
     vec3 L = normalize(skyLightsourceVector);
     float PNormalDotL = clamp(dot(P_Normal, L), 0.0, 1.0);
     int time = worldTime % 24000;
+
     
     vec2 blocklightAndSkylight = texture(COLOR_LIGHTMAP, v_texture_atlas_coordinate).rg;
     float blockLight = blocklightAndSkylight.x;
@@ -143,6 +153,8 @@ void main() {
     vec3 neeRayDir = L;
     vec3 neeRayStartPos = P + (P_Normal* Ray_Start_Bias); // 避免自己插自己加個偏移
     bool inShadow = false;
+    vec4 blueNoise = get_blue_noise(v_texture_atlas_coordinate);
+    float random = blueNoise.r;
 
 
 
@@ -152,7 +164,7 @@ void main() {
     vec3 pixelColor = texture(COLOR_MAIN, v_texture_atlas_coordinate).rgb* directLightColor* PNormalDotL;
 
     for (int i = 1; i <= Ray_Max_Step; i++) {
-        vec3 viewspaceRayPos = neeRayStartPos  +  ((float(i)* Ray_Step_Size)* neeRayDir);
+        vec3 viewspaceRayPos = neeRayStartPos  +  (((float(i)+random)* Ray_Step_Size)* neeRayDir);
         vec2 uvRayPos = get_uv_position_of_viewspace(viewspaceRayPos, cameraProjeTransMatr);
         vec3 viewspacePixelPosition = get_viewspace_position_of_uv(uvRayPos);
         
