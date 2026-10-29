@@ -1,23 +1,3 @@
-/*
-1.fsh設計出來是為了針對"每個像素"去做計算的，後面全都以此為重點
-2.composite的用途是"post-processing"
-3.因為要做screen space path tracing，所以要從算好的像素推回view space(做projection前的狀態)。
-  正向順序為:modelspace> m >worldspace> v >viewspace> P >clipspace>透視除法>ndc> uv(pixel) ，反向即得到逆順序。注意其中透視除法不是線性運算，所以會透過一些手段來反推
-4.sspt的想法:螢幕的每個像素對應一個遊戲裡的點>取該點(P點)的normal(N)>向外發射光線>若當下射線的虛擬位置的深度，比對應到螢幕上的像素的深度還要深>光線撞到東西了>判斷這個方快是不是光源>是就回傳顏色(等待更新，非常粗糙的想法)
-5.全部的view space單位都是1格方塊
-6.深度圖越遠，z越大。比如天空很遠，差不多就是1，越靠近相機越接近0
-*/
-/*
-常用語法:
-1.texture(a,b)。 這是glsl內建的function，a代表要去哪個貼圖抓、b代表要抓貼圖的哪個位置
-2.clamp(x,minValue,maxValue)。 clamp(車速,最小車速,最大車速)代表不管怎麼跑範圍都在最大跟最小中間，超過壓成最大，太小就拉到最小
-3.fract()=去整數只留小數
-4.abs()是絕對值(absolute value)
-5.uniform，為iris傳進來的全域唯讀變數
-6.sampler2D，讀2D貼圖
-*/
-
-
 #version 330 compatibility
 
 #define Ray_Max_Step 64 // [8 10 20 30 40 50 60 64 70 80 90 100 200]
@@ -73,17 +53,17 @@ out vec4 output_pixel_color;
 
 
 vec3 get_view_space_position(vec2 uv) {
-    float depth = texture(DEPTH_OPAQUE, uv).r;//深度圖的rgb都一樣所以隨便取，約定成俗取r
-    vec3 ndcPos = vec3(uv, depth)*2-1;//因為NDC規定畫面中心要是(0,0)，所以把uv的depth補回來之後，要整個"乘2減1"，讓uv的數學座標都正確
-    vec4 clipPos = cameraProjeTransMatrInverse * vec4(ndcPos, 1.0);//clip在projection乘完後還是4維的，補上 w=1.0 方便進行 4x4 矩陣運算，然後乘以"反projection矩陣"得到clip space
-    return clipPos.xyz / clipPos.w;//透視除法(除以 w 抵銷透視縮放)
+    float depth = texture(DEPTH_OPAQUE, uv).r;
+    vec3 ndcPos = vec3(uv, depth)*2-1;
+    vec4 clipPos = cameraProjeTransMatrInverse * vec4(ndcPos, 1.0);
+    return clipPos.xyz / clipPos.w;
 }
 
 
 vec3 get_view_space_normal(vec2 uv) {
     vec3 normal = texture(COLOR_NORMAL, uv).xyz;
-    if (length(normal) < 0.01) return vec3(0.0, 0.0, 1.0); // 如果這像素是天空/無幾何區 or 深度/法線長度接近 0，回傳 (0, 0, 1)，避免NaN
-    return normalize(normal * 2.0 - 1.0);// 把 G-Buffer 的 0~1 RGBA，換回 xyz的-1~1 View Normal 向量
+    if (length(normal) < 0.01) return vec3(0.0, 0.0, 1.0); 
+    return normalize(normal * 2.0 - 1.0);
 }
 
 
@@ -102,8 +82,8 @@ vec4 get_blue_noise(vec2 texcoord) {
 
 vec3 sample_half_sphere(vec3 N, vec2 uv) {
     vec4 noise = get_blue_noise(uv);
-    float rand1 = noise.r;//取r通道noise隨機
-    float rand2 = noise.g;//取g通道
+    float rand1 = noise.r;
+    float rand2 = noise.g;
     
     // 生成Hemisphere的xyz座標
     float phi = 6.2831853 * rand1;//一圈圓形的弧度，即2*pi，取名為phi。在此取隨機
