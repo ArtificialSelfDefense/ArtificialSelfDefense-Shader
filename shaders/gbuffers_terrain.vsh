@@ -23,6 +23,8 @@ out vec3 v_playerspace_block_vertex_position;
 out vec3 v_playerspace_block_normal;
 out vec3 v_playerspace_block_center_position;
 
+out vec3 v_viewspace_block_normal;
+
 flat out int v_block_id;//flat=不要interpolation
 
 
@@ -39,8 +41,8 @@ void main() {
     vec4 viewspace_block_vertex_position = gl_ModelViewMatrix* gl_Vertex;
     v_playerspace_block_vertex_position =  (gbufferViewInverseMat* viewspace_block_vertex_position).xyz;
     
-    vec3 viewspace_block_normal = normalize(gl_NormalMatrix * gl_Normal);
-    v_playerspace_block_normal = (gbufferViewInverseMat* vec4(viewspace_block_normal,1.0)).xyz;
+    v_viewspace_block_normal = normalize(gl_NormalMatrix * gl_Normal);
+    v_playerspace_block_normal = (gbufferViewInverseMat* vec4(v_viewspace_block_normal,1.0)).xyz;
 
 	v_playerspace_block_center_position = v_playerspace_block_vertex_position + block_vertex_to_middle_vec_and_light_level.xyz/64.0 +fract(cameraPosition);
 

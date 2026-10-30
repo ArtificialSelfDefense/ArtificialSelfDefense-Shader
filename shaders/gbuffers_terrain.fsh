@@ -14,11 +14,11 @@ in vec2 v_lightmap_coordinate;
 
 in vec4 v_biome_and_simpleAO_color;
 
-in vec3 v_viewspace_block_normal;
-
-in vec3 v_playerspace_block_vertex;
+in vec3 v_playerspace_block_vertex_position;
 in vec3 v_playerspace_block_normal;
 in vec3 v_playerspace_block_center_position;
+
+in vec3 v_viewspace_block_normal;
 
 flat in int v_block_id;//flat=不要interpolation
 
@@ -112,7 +112,7 @@ void main() {
 	#endif
 	#if VOXEL_POSITION_RECONSTRUCTION_METHOD == 2
 		//reconstructed using foot position & face normals
-		ivec3 voxel_coordinate = ivec3(v_playerspace_block_vertex-v_playerspace_block_normal*.1+fract(cameraPosition)+Voxel_Radius);
+		ivec3 voxel_coordinate = ivec3(v_playerspace_block_vertex_position-v_playerspace_block_normal*.1+fract(cameraPosition)+Voxel_Radius);
 	#endif
 	
 	//check if in voxel range
