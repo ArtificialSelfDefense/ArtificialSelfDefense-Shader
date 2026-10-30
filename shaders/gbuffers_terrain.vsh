@@ -17,10 +17,7 @@ uniform float frameTimeCounter;
 
 uniform vec3 cameraPosition;
 
-uniform mat4 cameraViewTransMatr;
-uniform mat4 cameraViewTransMatrInverse;
-uniform mat4 cameraProjeTransMatr;
-uniform mat4 cameraProjeTransMatrInverse;
+uniform mat4 gbufferViewInverseMat;
 
 
 out vec2 v_texture_atlas_coordinate;
@@ -46,10 +43,10 @@ void main() {
     v_biome_and_simpleAO_color = gl_Color;
 
     vec4 viewspace_block_vertex = gl_ModelViewMatrix* gl_Vertex;
-    v_playerspace_block_vertex =  (cameraViewTransMatrInverse* viewspace_block_vertex).xyz;
+    v_playerspace_block_vertex =  (gbufferViewInverseMat* viewspace_block_vertex).xyz;
     
     v_viewspace_block_normal = normalize(gl_NormalMatrix * gl_Normal);
-    v_playerspace_block_normal = (cameraViewTransMatrInverse* vec4(v_viewspace_block_normal,1.0)).xyz;
+    v_playerspace_block_normal = (gbufferViewInverseMat* vec4(v_viewspace_block_normal,1.0)).xyz;
 
     
 

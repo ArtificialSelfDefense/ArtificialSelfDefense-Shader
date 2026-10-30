@@ -28,8 +28,8 @@ uniform sampler2D COLOR_NORMAL;
 
 uniform sampler2D blue_noise_tex;
 
-uniform mat4 cameraProjeTransMatrInverse;
-uniform mat4 cameraProjeTransMatr;
+uniform mat4 gbufferProjectionInverseMat;
+uniform mat4 gbufferProjectionMat;
 
 
 uniform vec3 skyLightsourceVector;
@@ -50,7 +50,7 @@ layout(location=0) out vec4 output_pixel_color;
 vec3 get_viewspace_position_of_uv(vec2 uv) {
     float depth = texture(DEPTH_OPAQUE, uv).r;
     vec3 ndcPos = vec3(uv, depth)*2-1;
-    vec4 clipPos = cameraProjeTransMatrInverse * vec4(ndcPos, 1.0);
+    vec4 clipPos = gbufferProjectionInverseMat * vec4(ndcPos, 1.0);
     return clipPos.xyz / clipPos.w;
 }
 
@@ -63,7 +63,7 @@ vec3 get_viewspace_normal_of_uv(vec2 uv) {
 
 
 vec2 get_uv_position_of_viewspace(vec3 viewPos, mat4 projMat) {
-    vec4 clipPos = cameraProjeTransMatr * vec4(viewPos, 1.0);
+    vec4 clipPos = gbufferProjectionMat * vec4(viewPos, 1.0);
     vec3 ndc = clipPos.xyz / clipPos.w; 
     return ndc.xy * 0.5 + 0.5;
 }
@@ -156,7 +156,7 @@ void main() {
 
     for (int i = 0; i <= Ray_Max_Step; i++) {
         vec3 viewspaceRayPos = neeRayStartPos  +  (((float(i)+random)* Ray_Step_Size)* neeRayDir);
-        vec2 uvRayPos = get_uv_position_of_viewspace(viewspaceRayPos, cameraProjeTransMatr);
+        vec2 uvRayPos = get_uv_position_of_viewspace(viewspaceRayPos, gbufferProjectionMat);
         vec3 viewspacePixelPosition = get_viewspace_position_of_uv(uvRayPos);
         
         float rayPenetrationDistance = (viewspacePixelPosition.z - viewspaceRayPos.z);//對比兩個同樣uv座標在viewspace下的z值(越遠越負，sspt的概念是光線要穿進方塊，所以要用"方塊自己的(數字大) - 穿進去的(數字小)"，來得到正數)，即:1.光線的z 2.螢幕上對應物體的z

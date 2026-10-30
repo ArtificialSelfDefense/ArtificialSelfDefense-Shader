@@ -12,8 +12,7 @@ uniform sampler2D texture_atlas;
 uniform float frameTimeCounter;
 uniform vec3 cameraPosition;
 
-uniform mat4 cameraViewTransMatrInverse;
-uniform mat4 sunModelViewTransMatrInverse;
+uniform mat4 shadowViewInverseMat;
 
 
 
@@ -35,7 +34,7 @@ void main() {
     #define Voxel_Radius (Voxel_Area/2)
 
     vec3 viewspace_block_vertex_position = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
-	vec3 worldspace_block_vertex_position = (sunModelViewTransMatrInverse * vec4( viewspace_block_vertex_position ,1.) ).xyz;
+	vec3 worldspace_block_vertex_position = (shadowViewInverseMat * vec4( viewspace_block_vertex_position ,1.) ).xyz;
 
 
 

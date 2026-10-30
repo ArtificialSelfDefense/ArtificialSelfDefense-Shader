@@ -12,11 +12,6 @@ uniform float frameTimeCounter;
 
 uniform vec3 cameraPosition;
 
-uniform mat4 cameraViewTransMatr;
-uniform mat4 cameraViewTransMatrInverse;
-uniform mat4 cameraProjeTransMatr;
-uniform mat4 cameraProjeTransMatrInverse;
-
 
 in vec2 v_texture_atlas_coordinate;
 in vec2 v_lightmap_coordinate;
