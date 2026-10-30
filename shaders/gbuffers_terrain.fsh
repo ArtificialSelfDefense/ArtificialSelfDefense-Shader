@@ -27,7 +27,7 @@ uniform sampler2D SHADOW_OPAQUE;
 uniform float frameTimeCounter;
 uniform vec3 cameraPosition;
 
-uniform usampler3D voxelSampler;
+uniform usampler3D VoxelSampler;
 
 
 
@@ -112,7 +112,7 @@ void main() {
 
 	if( clamp(voxel_coordinate,0,Voxel_Area) == voxel_coordinate )
 	{
-		vec4 bytes = unpackUnorm4x8(texture3D(voxelSampler, vec3(voxel_coordinate)/vec3(Voxel_Area)).r);	
+		vec4 bytes = unpackUnorm4x8(texture3D(VoxelSampler, vec3(voxel_coordinate)/vec3(Voxel_Area)).r);	
 		output_voxelColor.rgb = bytes.rgb;
         
 		#define Visual_Data 0 //[0 1 2 3 4]
@@ -125,19 +125,19 @@ void main() {
 			if(grass)
 			{
 				vec3 neighbor = vec3(1.,0.,0.);
-				bytes = unpackUnorm4x8(texture3D(voxelSampler, vec3(voxel_coordinate+neighbor)/vec3(Voxel_Area)).r);	
+				bytes = unpackUnorm4x8(texture3D(VoxelSampler, vec3(voxel_coordinate+neighbor)/vec3(Voxel_Area)).r);	
 				thick_grass = thick_grass && (bytes.g > .7 || bytes.g < .1);
 				
 				neighbor = vec3(-1.,0.,0.);
-				bytes = unpackUnorm4x8(texture3D(voxelSampler, vec3(voxel_coordinate+neighbor)/vec3(Voxel_Area)).r);	
+				bytes = unpackUnorm4x8(texture3D(VoxelSampler, vec3(voxel_coordinate+neighbor)/vec3(Voxel_Area)).r);	
 				thick_grass = thick_grass && (bytes.g > .7 || bytes.g < .1);
 				
 				neighbor = vec3(0.,0,1.);
-				bytes = unpackUnorm4x8(texture3D(voxelSampler, vec3(voxel_coordinate+neighbor)/vec3(Voxel_Area)).r);	
+				bytes = unpackUnorm4x8(texture3D(VoxelSampler, vec3(voxel_coordinate+neighbor)/vec3(Voxel_Area)).r);	
 				thick_grass = thick_grass && (bytes.g > .7 || bytes.g < .1);
 				
 				neighbor = vec3(0.,0,-1.);
-				bytes = unpackUnorm4x8(texture3D(voxelSampler, vec3(voxel_coordinate+neighbor)/vec3(Voxel_Area)).r);	
+				bytes = unpackUnorm4x8(texture3D(VoxelSampler, vec3(voxel_coordinate+neighbor)/vec3(Voxel_Area)).r);	
 				thick_grass = thick_grass && (bytes.g > .7 || bytes.g < .1);
 					
 			}

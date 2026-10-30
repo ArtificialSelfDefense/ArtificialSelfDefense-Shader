@@ -14,13 +14,13 @@ layout(location = 0) out vec4 output_final_color;
 
 
 
-#if VOXEL_AREA == 32
+#if Voxel_Area == 32
 	const float voxelDistance = 32.0;
 #endif
-#if VOXEL_AREA == 64
+#if Voxel_Area == 64
 	const float voxelDistance = 64.0;
 #endif
-#if VOXEL_AREA == 128
+#if Voxel_Area == 128
 	const float voxelDistance = 128.0;
 #endif
 
