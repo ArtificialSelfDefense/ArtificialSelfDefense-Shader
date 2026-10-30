@@ -147,7 +147,7 @@ void main() {
 		//just making the shadow pass run
 		//you don't have to do this if using the 'shadows.enabled' flag in shader.properties
 		//vec3 shadow = texture(SHADOW_OPAQUE, v_texture_atlas_coordinate*100.).rgb;
-		//if(v_texture_atlas_coordinate.x < .01 && v_texture_atlas_coordinate.y < .01) voxelColor.rgb  = shadow;
+		//if(v_texture_atlas_coordinate.x < .01 && v_texture_atlas_coordinate.y < .01) output_voxelColor.rgb  = shadow;
 		
 		//visualize world position represented in voxel map
 		#define DEBUG_ALIGHNMENT 0 //[0 1]

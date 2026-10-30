@@ -55,7 +55,7 @@ void main() {
 			#endif
 			#if Visual_Data == 1
 				//visualize position
-				vec4 voxel_data = vec4(fract((v_playerspace_block_center_position.xyz+floor(cameraPosition))*.05),1.);
+				vec4 voxel_data = vec4(fract((playerspace_block_center_position.xyz+floor(cameraPosition))*.05),1.);
 			#endif
 			#if Visual_Data == 2
 				//visualize color of one pixel
