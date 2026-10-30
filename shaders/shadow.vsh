@@ -34,13 +34,13 @@ void main() {
     #define Voxel_Radius (Voxel_Area/2)
 
     vec3 viewspace_block_vertex_position = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
-	vec3 worldspace_block_vertex_position = (shadowViewInverseMat * vec4(viewspace_block_vertex_position,1.0)).xyz;
+	vec3 playerspace_block_vertex_position = (shadowViewInverseMat * vec4(viewspace_block_vertex_position,1.0)).xyz;
 
 
 
 
 
-    vec3 playerspace_block_center_position = worldspace_block_vertex_position + block_vertex_to_middle_vec_and_light_level.xyz/64.0 + fract(cameraPosition);//把前進而造成數值變小的playerspace的方塊中心座標小數部分，跟前進而造成數值變大的fract(cameraPosition)抵銷
+    vec3 playerspace_block_center_position = playerspace_block_vertex_position + block_vertex_to_middle_vec_and_light_level.xyz/64.0 + fract(cameraPosition);//把前進而造成數值變小的playerspace的方塊中心座標小數部分，跟前進而造成數值變大的fract(cameraPosition)抵銷
     ivec3 voxel_coordinate = ivec3(playerspace_block_center_position + Voxel_Radius);//體素的正中間就是"體素半徑一半"，所以針對playerspace的所有方塊中心，直接加體素半徑就可以對齊
 
 

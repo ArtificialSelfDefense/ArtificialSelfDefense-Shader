@@ -1,11 +1,5 @@
 #version 430 compatibility
-
-layout (r32ui) uniform uimage3D voxelImage;
-
 #include "/Define/Define_Engine.glsl"
-#include "/Define/Define_ColorTex.glsl"
-#include "/Define/Define_DepthTex.glsl"
-#include "/Define/Define_ShadowTex.glsl"
 
 in vec2 blockid;
 in vec4 block_vertex_to_middle_vec_and_light_level;
@@ -25,9 +19,7 @@ out vec2 v_lightmap_coordinate;
 
 out vec4 v_biome_and_simpleAO_color;
 
-out vec3 v_viewspace_block_normal;
-
-out vec3 v_playerspace_block_vertex;
+out vec3 v_playerspace_block_vertex_position;
 out vec3 v_playerspace_block_normal;
 out vec3 v_playerspace_block_center_position;
 
@@ -42,22 +34,19 @@ void main() {
     
     v_biome_and_simpleAO_color = gl_Color;
 
-    vec4 viewspace_block_vertex = gl_ModelViewMatrix* gl_Vertex;
-    v_playerspace_block_vertex =  (gbufferViewInverseMat* viewspace_block_vertex).xyz;
-    
-    v_viewspace_block_normal = normalize(gl_NormalMatrix * gl_Normal);
-    v_playerspace_block_normal = (gbufferViewInverseMat* vec4(v_viewspace_block_normal,1.0)).xyz;
 
+
+    vec4 viewspace_block_vertex_position = gl_ModelViewMatrix* gl_Vertex;
+    v_playerspace_block_vertex_position =  (gbufferViewInverseMat* viewspace_block_vertex_position).xyz;
     
+    vec3 viewspace_block_normal = normalize(gl_NormalMatrix * gl_Normal);
+    v_playerspace_block_normal = (gbufferViewInverseMat* vec4(viewspace_block_normal,1.0)).xyz;
+
+	v_playerspace_block_center_position = v_playerspace_block_vertex_position + block_vertex_to_middle_vec_and_light_level.xyz/64.0 +fract(cameraPosition);
+
 
 
     v_block_id = int(blockid.x + 0.5);
-
-
-
-
-
-
 
 
 
