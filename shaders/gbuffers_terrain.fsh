@@ -2,11 +2,7 @@
 #include "/Define/Define_Engine.glsl"
 
 
-uniform sampler2D texture_atlas;
 
-uniform float frameTimeCounter;
-
-uniform vec3 cameraPosition;
 
 
 in vec2 v_texture_atlas_coordinate;
@@ -22,12 +18,20 @@ in vec3 v_viewspace_block_normal;
 
 flat in int v_block_id;//flat=不要interpolation
 
+
+uniform sampler2D texture_atlas;
 uniform sampler2D lightmap;
+
 uniform sampler2D SHADOW_OPAQUE;
+
+uniform float frameTimeCounter;
+uniform vec3 cameraPosition;
+
 uniform usampler3D voxelSampler;
 
 
-const float ambientOcclusionLevel = 0.0;//他媽的狗屎vanillaAO終於給老子關掉了，一定他媽的要放在.fsh不然不會生效
+
+//const float ambientOcclusionLevel = 0.0;//他媽的狗屎vanillaAO終於給老子關掉了，一定他媽的要放在.fsh不然不會生效
 
 
 
@@ -62,7 +66,8 @@ layout(location = 4) out vec4 output_voxelColor;
 
 
 void main() {
-    vec4 albedo = texture(texture_atlas, v_texture_atlas_coordinate)* v_biome_and_simpleAO_color;
+    vec4 albedo = texture(texture_atlas, v_texture_atlas_coordinate);
+	albedo.rgb = albedo.rgb* v_biome_and_simpleAO_color.rgb;
     if (albedo.a < 0.1) {
        discard;
     }
@@ -90,35 +95,23 @@ void main() {
 
 
 
-
-
-	output_voxelColor = texture(texture_atlas, v_texture_atlas_coordinate)* v_biome_and_simpleAO_color* texture(lightmap, v_lightmap_coordinate);
-	if (output_voxelColor.a < 0.1) {
-		discard;
-	}
-	
-	// to show voxel range
-	output_voxelColor.b = 1.; 
-	
-	//get voxel map position
 	#define Voxel_Area 128 //[32 64 128]
 	#define Voxel_Radius (Voxel_Area/2)
 
-	//get which voxel this is in 2 ways
-	#define VOXEL_POSITION_RECONSTRUCTION_METHOD 2 //[1 2]
-	#if VOXEL_POSITION_RECONSTRUCTION_METHOD == 1
-		//passed from vertex shader
-		ivec3 voxel_coordinate = ivec3(v_playerspace_block_center_position+Voxel_Radius);
-	#endif
-	#if VOXEL_POSITION_RECONSTRUCTION_METHOD == 2
-		//reconstructed using foot position & face normals
-		ivec3 voxel_coordinate = ivec3(v_playerspace_block_vertex_position-v_playerspace_block_normal*.1+fract(cameraPosition)+Voxel_Radius);
-	#endif
+    output_voxelColor = texture(texture_atlas, v_texture_atlas_coordinate);
+	output_voxelColor.rgb = output_voxelColor.rgb* v_biome_and_simpleAO_color.rgb;
+    output_voxelColor = output_voxelColor* texture(lightmap,v_lightmap_coordinate);
+	if (albedo.a < 0.1) {
+       discard;
+    }
 	
-	//check if in voxel range
+	
+	output_voxelColor.b = 1.; 
+	ivec3 voxel_coordinate = ivec3(v_playerspace_block_vertex_position-v_playerspace_block_normal* 0.1 + fract(cameraPosition)+Voxel_Radius);
+	
+
 	if( clamp(voxel_coordinate,0,Voxel_Area) == voxel_coordinate )
 	{
-		//get data, unpack, visualize
 		vec4 bytes = unpackUnorm4x8(texture3D(voxelSampler, vec3(voxel_coordinate)/vec3(Voxel_Area)).r);	
 		output_voxelColor.rgb = bytes.rgb;
         
