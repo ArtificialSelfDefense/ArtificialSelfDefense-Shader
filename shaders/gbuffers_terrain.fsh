@@ -117,8 +117,8 @@ void main() {
         
 		#define Visual_Data 0 //[0 1 2 3 4]
 		#if Visual_Data == 4
-			//handle a block differently based on type of block, and checking it's neighbors
-			//thick grass
+
+
 			bool grass = bytes.g > .7;
 			bool thick_grass = grass;
 			
@@ -144,12 +144,7 @@ void main() {
 			output_voxelColor.rgb = thick_grass? vec3(0.,1.,0.) : grass? vec3(1.,0.,0.) : vec3(.2);
 		#endif
 		
-		//just making the shadow pass run
-		//you don't have to do this if using the 'shadows.enabled' flag in shader.properties
-		//vec3 shadow = texture(SHADOW_OPAQUE, v_texture_atlas_coordinate*100.).rgb;
-		//if(v_texture_atlas_coordinate.x < .01 && v_texture_atlas_coordinate.y < .01) output_voxelColor.rgb  = shadow;
-		
-		//visualize world position represented in voxel map
+
 		#define DEBUG_ALIGHNMENT 0 //[0 1]
 		#if DEBUG_ALIGHNMENT == 1
 			output_voxelColor.rgb  = fract(vec3(voxel_coordinate + floor(cameraPosition))/5.);
