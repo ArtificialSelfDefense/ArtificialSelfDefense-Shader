@@ -34,7 +34,7 @@ void main() {
     #define Voxel_Radius (Voxel_Area/2)
 
     vec3 viewspace_block_vertex_position = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
-	vec3 worldspace_block_vertex_position = (shadowViewInverseMat * vec4( viewspace_block_vertex_position ,1.) ).xyz;
+	vec3 worldspace_block_vertex_position = (shadowViewInverseMat * vec4(viewspace_block_vertex_position,1.0)).xyz;
 
 
 
@@ -80,13 +80,6 @@ void main() {
 		uint integerValue = packUnorm4x8(voxel_data);
 		imageAtomicMax(voxelImage, voxel_coordinate, integerValue);
         }
-
-
-
-
-
-
-
 
 
 
