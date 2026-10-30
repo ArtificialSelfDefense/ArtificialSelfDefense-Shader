@@ -1,9 +1,5 @@
 #version 430 compatibility
-
 #include "/Define/Define_Engine.glsl"
-#include "/Define/Define_ColorTex.glsl"
-#include "/Define/Define_DepthTex.glsl"
-#include "/Define/Define_ShadowTex.glsl"
 
 
 uniform sampler2D texture_atlas;
@@ -34,6 +30,13 @@ uniform usampler3D voxelSampler;
 const float ambientOcclusionLevel = 0.0;//他媽的狗屎vanillaAO終於給老子關掉了，一定他媽的要放在.fsh不然不會生效
 
 
+
+/* DRAWBUFFERS:01846 */
+layout(location = 0) out vec4 output_albedo;
+layout(location = 1) out vec4 output_encodedNormal;
+layout(location = 2) out vec4 output_emissionBlockLightColor;
+layout(location = 3) out vec4 output_lightmap;
+layout(location = 4) out vec4 output_voxelColor;
 /*
   DRAWBUFFERS解釋:
 
@@ -54,12 +57,8 @@ const float ambientOcclusionLevel = 0.0;//他媽的狗屎vanillaAO終於給老�
 #define COLOR_EMISSION colortex8
 
 */
-/* DRAWBUFFERS:01846 */
-layout(location = 0) out vec4 output_albedo;
-layout(location = 1) out vec4 output_encodedNormal;
-layout(location = 2) out vec4 output_emissionBlockLightColor;
-layout(location = 3) out vec4 output_lightmap;
-layout(location = 4) out vec4 output_voxelColor;
+
+
 
 
 void main() {
