@@ -2,6 +2,8 @@
 layout (r32ui) uniform uimage3D voxelImage;
 #include "/Define/Define_Engine.glsl"
 #define Visualize_Voxelization
+#define Voxel_Area 128 //[32 64 128]
+#define Voxel_Radius (Voxel_Area/2)
 
 
 in vec2 blockid;
@@ -30,8 +32,6 @@ void main() {
 
 
 
-    #define Voxel_Area 128 //[32 64 128]
-    #define Voxel_Radius (Voxel_Area/2)
 
     vec3 viewspace_block_vertex_position = vec4(gl_ModelViewMatrix * gl_Vertex).xyz;
 	vec3 playerspace_block_vertex_position = (shadowViewInverseMat * vec4(viewspace_block_vertex_position,1.0)).xyz;

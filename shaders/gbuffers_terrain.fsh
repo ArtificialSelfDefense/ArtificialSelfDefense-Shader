@@ -1,7 +1,7 @@
 #version 430 compatibility
 #include "/Define/Define_Engine.glsl"
-
-
+#define Voxel_Area 128 //[32 64 128]
+#define Voxel_Radius (Voxel_Area/2)
 
 
 
@@ -95,8 +95,7 @@ void main() {
 
 
 
-	#define Voxel_Area 128 //[32 64 128]
-	#define Voxel_Radius (Voxel_Area/2)
+
 
     output_voxelColor = texture(texture_atlas, v_texture_atlas_coordinate);
 	output_voxelColor.rgb = output_voxelColor.rgb* v_biome_and_simpleAO_color.rgb;
