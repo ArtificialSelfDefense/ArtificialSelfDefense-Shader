@@ -8,6 +8,8 @@
 
 #define Sun_Direct_Light
 
+#define Voxel_Area 128 //[32 64 128]
+#define Voxel_Radius (Voxel_Area/2)
 
 
 
@@ -18,6 +20,11 @@
 
 in vec2 v_texture_atlas_coordinate;
 
+in vec3 v_playerspace_block_normal;
+in vec3 v_playerspace_block_vertex_position;
+
+
+uniform usampler3D VoxelSampler;    
 
 uniform float viewWidth;
 uniform float viewHeight;
@@ -31,7 +38,7 @@ uniform sampler2D blue_noise_tex;
 uniform mat4 gbufferProjectionInverseMat;
 uniform mat4 gbufferProjectionMat;
 
-
+uniform vec3 cameraPosition;
 uniform vec3 skyLightsourceVector;
 
 uniform int worldTime;
@@ -74,7 +81,9 @@ vec4 get_blue_noise(vec2 texcoord) {
     return texture(blue_noise_tex, noiseUV);
 }
 
-
+ivec3 voxel_coordinate = ivec3(v_playerspace_block_vertex_position-v_playerspace_block_normal* 0.1 + fract(cameraPosition)+Voxel_Radius);
+uint rawVoxelData = texelFetch(VoxelSampler, voxel_coordinate, 0).r;
+bool isSolid = (rawVoxelData & 1u) == 1u;
 
 
 
@@ -142,6 +151,8 @@ void main() {
 
     // 4. 定義NEE係數(不能調數值的or必須寫死的)
     vec3 neeRayDir = L;
+    ivec3 stepDir = ivec3(sign(neeRayDir));//sign是取正負號的意思，>0時取1 ； <0時取-1 ; =0時取0
+    //ivec3 currentVoxel = ivec3(floor(rayStart));
     vec3 neeRayStartPos = P + (P_Normal* Ray_Start_Bias); // 避免自己插自己加個偏移
     bool inShadow = false;
     vec4 blueNoise = get_blue_noise(v_texture_atlas_coordinate);
@@ -151,7 +162,7 @@ void main() {
 
     
     
-    // 5.Raymarching
+    // 5.DDA
     vec3 pixelColor = texture(COLOR_MAIN, v_texture_atlas_coordinate).rgb* directLightColor* PNormalDotL;
 
     for (int i = 0; i <= Ray_Max_Step; i++) {
