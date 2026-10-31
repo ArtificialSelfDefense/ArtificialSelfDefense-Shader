@@ -1,8 +1,8 @@
 #version 430 compatibility
 layout (r32ui) uniform uimage3D voxelImage;
-
-
 #include "/Define/Define_Engine.glsl"
+#define Visualize_Voxelization
+
 
 in vec2 blockid;
 in vec4 block_vertex_to_middle_vec_and_light_level;
@@ -45,7 +45,7 @@ void main() {
 
 
 
-
+#ifdef Visualize_Voxelization
 		if(mod(gl_VertexID,4)==0  &&  clamp(voxel_coordinate,0,Voxel_Area)==voxel_coordinate)	{
 			
 			#define Visual_Data 0 //[0 1 2 3 4]
@@ -75,7 +75,13 @@ void main() {
 		uint integerValue = packUnorm4x8(voxel_data);
 		imageAtomicMax(voxelImage, voxel_coordinate, integerValue);
         }
-
+#else
+		if(mod(gl_VertexID,4)==0  &&  clamp(voxel_coordinate,0,Voxel_Area)==voxel_coordinate){
+			vec4 voxel_data = blockid.x==1. ? vec4(1.0,0.0,0.0,1.0) : vec4(0.0,0.0,0.0,1.0)
+		}
+		uint integerValue = packUnorm4x8(voxel_data);
+		imageAtomicMax(voxelImage, voxel_coordinate, integerValue);
+#endif
 
 
 
