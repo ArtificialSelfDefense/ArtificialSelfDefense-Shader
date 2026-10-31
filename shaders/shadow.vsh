@@ -77,10 +77,9 @@ void main() {
         }
 #else
 		if(mod(gl_VertexID,4)==0  &&  clamp(voxel_coordinate,0,Voxel_Area)==voxel_coordinate){
-			vec4 voxel_data = blockid.x==1. ? vec4(1.0,0.0,0.0,1.0) : vec4(0.0,0.0,0.0,1.0)
+			uint integerValue = (blockid.x == 1.0) ? 1u : 0u;
+			imageAtomicMax(voxelImage, voxel_coordinate, integerValue);
 		}
-		uint integerValue = packUnorm4x8(voxel_data);
-		imageAtomicMax(voxelImage, voxel_coordinate, integerValue);
 #endif
 
 
