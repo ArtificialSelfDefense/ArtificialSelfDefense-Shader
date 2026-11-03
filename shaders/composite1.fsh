@@ -16,6 +16,7 @@
 #include "/Define/Define_ColorTex.glsl"
 #include "/Define/Define_DepthTex.glsl"
 #include "/Define/Define_Engine.glsl"
+#include "/Define/Define_ShadowTex.glsl"
 
 
 in vec2 v_texture_atlas_coordinate;
@@ -30,6 +31,7 @@ uniform float viewWidth;
 uniform float viewHeight;
 
 uniform sampler2D DEPTH_OPAQUE;
+uniform sampler2D SHADOW_OPAQUE;
 uniform sampler2D COLOR_MAIN;
 uniform sampler2D COLOR_NORMAL;
 
@@ -37,6 +39,8 @@ uniform sampler2D blue_noise_tex;
 
 uniform mat4 gbufferProjectionInverseMat;
 uniform mat4 gbufferProjectionMat;
+uniform mat4 shadowViewMat;
+uniform mat4 shadowProjectionMat;
 
 uniform vec3 cameraPosition;
 uniform vec3 skyLightsourceVector;
