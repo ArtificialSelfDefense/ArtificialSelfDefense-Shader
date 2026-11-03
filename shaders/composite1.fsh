@@ -61,41 +61,34 @@ layout(location=0) out vec4 output_pixel_color;
 
 
 
-vec3 get_viewspace_position_of_uv(vec2 uv) {
+vec3 uv_to_viewspace_position(vec2 uv) {
     float depth = texture(DEPTH_OPAQUE, uv).r;
     vec3 ndcPos = vec3(uv, depth)*2-1;
     vec4 clipPos = gbufferProjectionInverseMat * vec4(ndcPos, 1.0);
     return clipPos.xyz / clipPos.w;
 }
 
-vec3 viewspace_to_worldspace(vec3 P) {
-    vec4 temp=gbufferViewInverseMat*vec4(P,1.0);
-    
-    return temp.xyz;
-}
-
-
-vec3 get_viewspace_normal_of_uv(vec2 uv) {
+vec3 uv_to_viewspace_normal(vec2 uv) {
     vec3 normal = texture(COLOR_NORMAL, uv).xyz;
     if (length(normal) < 0.01) return vec3(0.0, 0.0, 1.0); 
     return normalize(normal * 2.0 - 1.0);
 }
 
+vec3 uv_to_worldspace_position (vec2 uv) {
+    float depth = texture(DEPTH_OPAQUE, uv).r;
+    vec3 ndcPos = vec3(uv, depth)*2-1;
+    vec4 worldPos = gbufferViewInverseMat* gbufferProjectionInverseMat* vec4(ndcPos, 1.0);
+    return worldPos.xyz / worldPos.w;
+}
 
-vec2 get_uv_position_of_viewspace(vec3 viewPos, mat4 projMat) {
+vec2 viewspace_to_uv_position(vec3 viewPos, mat4 projMat) {
     vec4 clipPos = gbufferProjectionMat * vec4(viewPos, 1.0);
     vec3 ndc = clipPos.xyz / clipPos.w; 
     return ndc.xy * 0.5 + 0.5;
 }
 
-
-vec4 get_blue_noise(vec2 texcoord) {
-    vec2 noiseUV = (texcoord * vec2(viewWidth, viewHeight)) / 128.0;
-    return texture(blue_noise_tex, noiseUV);
-}
-
-vec3 get_shadow_space_position(vec3 viewPos) {
-    vec4 shadowViewPos = shadowViewMat * vec4(viewPos, 1.0);
+vec3 shadow_worldspace_to_uv_position(vec3 worldPos) {
+    vec4 shadowViewPos = shadowViewMat * vec4(worldPos, 1.0);
     vec4 shadowClipPos = shadowProjectionMat * shadowViewPos;
     vec3 shadowNDC = shadowClipPos.xyz / shadowClipPos.w;
     return shadowNDC * 0.5 + 0.5;
@@ -116,8 +109,8 @@ vec3 get_shadow_space_position(vec3 viewPos) {
 void main() {
 #ifdef Sun_Direct_Light
     // 1. 定義 P 點、N 法線、指向太陽光向量 L
-    vec3 P = get_viewspace_position_of_uv(v_texture_atlas_coordinate);
-    vec3 P_Normal = get_viewspace_normal_of_uv(v_texture_atlas_coordinate);
+    vec3 P = uv_to_viewspace_position(v_texture_atlas_coordinate);
+    vec3 P_Normal = uv_to_viewspace_normal(v_texture_atlas_coordinate);
     vec3 L = normalize(skyLightsourceVector);
     float PNormalDotL = clamp(dot(P_Normal, L), 0.0, 1.0);
     int time = worldTime % 24000;
@@ -162,27 +155,13 @@ void main() {
     }
 
 
-
-
-
-    // 4. 定義NEE係數(不能調數值的or必須寫死的)
-    vec3 neeRayDir = L;
-    ivec3 stepDir = ivec3(sign(neeRayDir));//sign是取正負號的意思，>0時取1 ； <0時取-1 ; =0時取0
-    //ivec3 currentVoxel = ivec3(floor(rayStart));
-    vec3 neeRayStartPos = P + (P_Normal* Ray_Start_Bias); // 避免自己插自己加個偏移
+    
+    // 5.shadowmap陰影判斷&直接光顏色
     bool inShadow = false;
-    vec4 blueNoise = get_blue_noise(v_texture_atlas_coordinate);
-    float random = blueNoise.r;
-
-
-
-    
-    
-    // 5.DDA
     vec3 pixelColor = texture(COLOR_MAIN, v_texture_atlas_coordinate).rgb* directLightColor* PNormalDotL;
-    vec3 worldspaceP=viewspace_to_worldspace(P);
+    vec3 worldspaceP=uv_to_worldspace_position(v_texture_atlas_coordinate);
 
-    vec3 shadowPos = get_shadow_space_position(worldspaceP);
+    vec3 shadowPos = shadow_worldspace_to_uv_position(worldspaceP);
     if (shadowPos.x >= 0.0 && shadowPos.x <= 1.0 &&
         shadowPos.y >= 0.0 && shadowPos.y <= 1.0 &&
         shadowPos.z >= 0.0 && shadowPos.z <= 1.0) {
@@ -204,22 +183,13 @@ void main() {
 #endif   
 }
 
-    /* 驗證測試：如果撞到物體，輸出綠色；沒撞到輸出黑色
-    if (inShadow) {
-        output_pixel_color = vec4(0.0, 1.0, 0.0, 1.0); // 綠色代表撞擊成功
-    } else {
-        output_pixel_color = vec4(0.0, 0.0, 0.0, 1.0); // 黑色代表未撞擊
-    }
-    */
-    
-
     /*
     測試depth:
     vec4 color = texture(COLOR_MAIN, v_texture_atlas_coordinate);
 
 
-    vec3 viewPos = get_viewspace_position_of_uv(v_texture_atlas_coordinate);//函式，自己看
-    vec3 viewNormal = get_viewspace_normal_of_uv(v_texture_atlas_coordinate);//同上
+    vec3 viewPos = uv_to_viewspace_position(v_texture_atlas_coordinate);//函式，自己看
+    vec3 viewNormal = uv_to_viewspace_normal(v_texture_atlas_coordinate);//同上
     
     
     float depth = texture(DEPTH_OPAQUE, v_texture_atlas_coordinate).r;
@@ -231,17 +201,13 @@ void main() {
     
     */
     
-
-
-
-
     /*
     測試normal:
     vec4 color = texture(COLOR_MAIN, v_texture_atlas_coordinate);
 
 
-    vec3 viewPos = get_viewspace_position_of_uv(v_texture_atlas_coordinate);//函式，自己看
-    vec3 viewNormal = get_viewspace_normal_of_uv(v_texture_atlas_coordinate);//同上    
+    vec3 viewPos = uv_to_viewspace_position(v_texture_atlas_coordinate);//函式，自己看
+    vec3 viewNormal = uv_to_viewspace_normal(v_texture_atlas_coordinate);//同上    
 
     
     color.rgb = viewNormal * 0.5 + 0.5;
