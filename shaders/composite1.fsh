@@ -1,3 +1,5 @@
+/*modelspace> m >worldspace> v >viewspace> P >clipspace>透視除法>ndc> uv(pixel)*/
+
 #version 330 compatibility
 
 #define Ray_Max_Step 64 // [8 10 20 30 40 50 60 64 70 80 90 100 200]
@@ -39,6 +41,7 @@ uniform sampler2D blue_noise_tex;
 
 uniform mat4 gbufferProjectionInverseMat;
 uniform mat4 gbufferProjectionMat;
+uniform mat4 gbufferViewInverseMat;
 uniform mat4 shadowViewMat;
 uniform mat4 shadowProjectionMat;
 
@@ -63,6 +66,12 @@ vec3 get_viewspace_position_of_uv(vec2 uv) {
     vec3 ndcPos = vec3(uv, depth)*2-1;
     vec4 clipPos = gbufferProjectionInverseMat * vec4(ndcPos, 1.0);
     return clipPos.xyz / clipPos.w;
+}
+
+vec3 viewspace_to_worldspace(vec3 P) {
+    vec4 temp=gbufferViewInverseMat*vec4(P,1.0);
+    
+    return temp.xyz;
 }
 
 
@@ -171,30 +180,20 @@ void main() {
     
     // 5.DDA
     vec3 pixelColor = texture(COLOR_MAIN, v_texture_atlas_coordinate).rgb* directLightColor* PNormalDotL;
+    vec3 worldspaceP=viewspace_to_worldspace(P);
 
-    for (int i = 0; i <= Ray_Max_Step; i++) {
-        vec3 viewspaceRayPos = neeRayStartPos  +  (((float(i)+random)* Ray_Step_Size)* neeRayDir);
-        vec2 uvRayPos = get_uv_position_of_viewspace(viewspaceRayPos, gbufferProjectionMat);
-        vec3 viewspacePixelPosition = get_viewspace_position_of_uv(uvRayPos);
+    vec3 shadowPos = get_shadow_space_position(worldspaceP);
+    if (shadowPos.x >= 0.0 && shadowPos.x <= 1.0 &&
+        shadowPos.y >= 0.0 && shadowPos.y <= 1.0 &&
+        shadowPos.z >= 0.0 && shadowPos.z <= 1.0) {
         
-        float rayPenetrationDistance = (viewspacePixelPosition.z - viewspaceRayPos.z);//對比兩個同樣uv座標在viewspace下的z值(越遠越負，sspt的概念是光線要穿進方塊，所以要用"方塊自己的(數字大) - 穿進去的(數字小)"，來得到正數)，即:1.光線的z 2.螢幕上對應物體的z
+        float closestDepth = texture(SHADOW_OPAQUE, shadowPos.xy).r;
+        float currentDepth = shadowPos.z;
+        float bias = max(Ray_Start_Bias * 0.01 * (1.0 - PNormalDotL), 0.0005);
 
-        
-        if (uvRayPos.x < 0.0 || uvRayPos.x > 1.0 || uvRayPos.y < 0.0 || uvRayPos.y > 1.0) {
-            break;
-        }
-
-        //if (texture(DEPTH_OPAQUE, uvRayPos).r >= 1.0) {
-          //  continue; 
-        //}
-
-
-
-        if (rayPenetrationDistance>= Min_Penetration_Depth  &&  rayPenetrationDistance< Thickness) {
+        if (currentDepth - bias > closestDepth) {
             inShadow = true;
-            
-            pixelColor = vec3(0.0);//陰影
-            break;
+            pixelColor = vec3(0.0);
         }
     }
 
