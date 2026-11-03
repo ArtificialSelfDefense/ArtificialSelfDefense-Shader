@@ -85,9 +85,12 @@ vec4 get_blue_noise(vec2 texcoord) {
     return texture(blue_noise_tex, noiseUV);
 }
 
-ivec3 voxel_coordinate = ivec3(v_playerspace_block_vertex_position-v_playerspace_block_normal* 0.1 + fract(cameraPosition)+Voxel_Radius);
-uint rawVoxelData = texelFetch(VoxelSampler, voxel_coordinate, 0).r;
-bool isSolid = (rawVoxelData & 1u) == 1u;
+vec3 get_shadow_space_position(vec3 viewPos) {
+    vec4 shadowViewPos = shadowViewMat * vec4(viewPos, 1.0);
+    vec4 shadowClipPos = shadowProjectionMat * shadowViewPos;
+    vec3 shadowNDC = shadowClipPos.xyz / shadowClipPos.w;
+    return shadowNDC * 0.5 + 0.5;
+}
 
 
 
